@@ -4,25 +4,25 @@
 
 **Tenemos la matriz, pero la generó el otro equipo, no nosotros.**
 Está en `equipo_chat/matriz_peso_commit_84x84_corregida.xlsx`. Su hoja mide A1:CG85, o sea 84 filas y 84 columnas más los encabezados R1–R84. No la hemos abierto para revisar los valores.
-**En este repo todavía no hemos corrido ningún paso.** `out/` solo tiene archivos viejos.
+**En este repo ya corrieron los pasos 1 y 2; faltan COMMIT (3) y las matrices (4).**
 
 ## Paso a paso
 
 | Paso | Script | Estado en este repo |
 |---|---|---|
-| 1. Gradientes con `y` invertido, máscara, respuesta, FOD | `01_preprocess.sh` | Escrito, **sin correr** |
-| 2. Tractograma 100k, longitudes, SIFT2 | `02_tractography.sh` | Escrito, **sin correr** |
-| 3. COMMIT | `03_commit.sh` | Escrito, **sin correr** |
-| 4. Matrices 84 × 84, Excel, evaluación | `04_matrices.sh` | Escrito, **sin correr** |
+| 1. Gradientes con `y` invertido, máscara, respuesta, FOD | `01_preprocess.sh` | Corrido aquí (2 min). Sale `dwi.mif`, `mask.mif`, `fod.mif` |
+| 2. Tractograma 100k, longitudes, SIFT2 | `02_tractography.sh` | Corrido aquí con el `.tck` del otro equipo (1 min 40 s). `tckstats` coincide: media 92.13, mediana 95.21, std 40.65 |
+| 3. COMMIT | `03_commit.sh` | Escrito, **sin correr** (se corre en otra máquina con más RAM) |
+| 4. Matrices 84 × 84, Excel, evaluación | `04_matrices.sh` | Escrito, **sin correr** (se corre en otra máquina con más RAM) |
 
-"Escrito" quiere decir que la sintaxis es válida y que los comandos son los del otro equipo. No se ha probado con los datos de este repo.
+Esta laptop (11 GB de RAM, 4 núcleos) es solo para desarrollar. COMMIT y las matrices se corren en otra máquina.
 
 ## Qué falta para tener nuestra propia matriz
 
 1. ~~Un entorno con MRtrix3 y COMMIT.~~ Listo: `conda activate dwmri` (ver `environment.yml`).
-2. El `tracks_100k.tck` del otro equipo (por Drive, 109 MB), para obtener sus mismos números.
-3. Correr los pasos 1 a 4. Con 11 GB de RAM, COMMIT podría dar `Killed`; en ese caso, subconjunto de 20 000 hilos.
-4. Comparar con los números de control de `pipeline.md`: media de longitud ≈ 92 mm, NRMSE ≈ 0.106, 446 conexiones del GT recuperadas.
+2. ~~El `tracks_100k.tck` del otro equipo.~~ Listo: ya está en `out/`.
+3. Correr los pasos 3 y 4 en una máquina con más RAM. Hay que llevar `out/` (≈ 500 MB) o repetir los pasos 1 y 2 con el mismo `.tck`.
+4. Comparar con los números de control de `pipeline.md`: NRMSE ≈ 0.106 y 446 conexiones del GT recuperadas (la longitud media ya coincide).
 
 ## Lo que ya sabemos (según el otro equipo, sin reproducir)
 
