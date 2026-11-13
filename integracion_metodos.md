@@ -4,7 +4,7 @@
 
 ## Estado
 
-| Método | Quién | Pesos sobre `out/tracks_100k.tck` | Matriz comparable | Estado |
+| Método | Quién | Pesos sobre `data/tracks_100k.tck` | Matriz comparable | Estado |
 |---|---|---|---|---|
 | COMMIT | nosotros | `out/commit/pesos_commit.txt` | `out/matriz_peso_commit_84x84_corregida.xlsx` | ✅ |
 | SIFT2 | equipo SIFT2 / nosotros | `out/pesos_sift2.txt` | `out/matriz_sift2.xlsx` (la del equipo, con la diagonal corregida: `out/equipos/matriz_sift2_equipo_84x84_diag0.xlsx`) | ✅ |
@@ -14,7 +14,7 @@
 
 Las tres deben cumplir lo mismo, si no la diferencia no es del método:
 
-1. **Mismo tractograma:** `out/tracks_100k.tck` (100 000 hilos, media 92 mm, eje *y* corregido, `-mask`).
+1. **Mismo tractograma:** `data/tracks_100k.tck` (100 000 hilos, media 92 mm, eje *y* corregido, `-mask`).
 2. **Un peso por hilo, en el orden del `.tck`.**
 3. **Misma matriz:** `tck2connectome ... data/Parcels_free.nii ... -tck_weights_in <pesos> -symmetric -zero_diagonal`.
 4. **Mismo formato:** `.xlsx` 84 × 84 con encabezados R1–R84 (`scripts/exportar_matriz84.py`).
@@ -62,7 +62,7 @@ SIFT2 reparte peso sobre un tractograma que ya estaba bien trazado, así que una
 
 Su matriz recupera **120 de 529** conexiones del GT, con AUC 0.535 (azar) y Pearson 0.05 con el GT. Es casi igual que el Excel inicial con el mismo error (125). El problema es el tractograma, no su código de LiFE.
 
-**Qué se hizo:** `scripts/correr_life.py` es su mismo script (`FiberModel(gtab).fit(data, hilos, inv(affine))`, `.bvec` crudo), solo con `out/tracks_100k.tck` como entrada. Aquí no se pudo correr completo: con nuestros hilos de 92 mm pide ≈ 20 GB y la Mac tiene 16. Una prueba con 20 000 hilos tardó 21 s y usó 4.7 GB; con 100 000 se quedó esperando a la swap y la detuve. **Se les pidió correrlo con `tracks_100k.tck`.** Cuando manden `life_weights.txt`:
+**Qué se hizo:** `scripts/correr_life.py` es su mismo script (`FiberModel(gtab).fit(data, hilos, inv(affine))`, `.bvec` crudo), solo con `data/tracks_100k.tck` como entrada. Aquí no se pudo correr completo: con nuestros hilos de 92 mm pide ≈ 20 GB y la Mac tiene 16. Una prueba con 20 000 hilos tardó 21 s y usó 4.7 GB; con 100 000 se quedó esperando a la swap y la detuve. **Se les pidió correrlo con `tracks_100k.tck`.** Cuando manden `life_weights.txt`:
 
 ```bash
 mkdir -p out/life && cp life_weights.txt out/life/pesos_life.txt   # 100 000 líneas, orden del .tck

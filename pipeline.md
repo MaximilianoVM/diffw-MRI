@@ -67,25 +67,25 @@ Calcula la FOD (orientaciones de fibras en cada vóxel) por deconvolución esfé
 ## Paso 2. Tractograma y SIFT2 — `scripts/02_tractography.sh`
 
 ```bash
-tckgen out/fod.mif out/tracks_100k.tck -algorithm iFOD2 \
+tckgen out/fod.mif data/tracks_100k.tck -algorithm iFOD2 \
   -seed_image out/mask.mif -mask out/mask.mif -select 100000
 ```
-Genera 100 000 hilos sin salir de la máscara. Es aleatorio: para obtener los mismos números, usen el `tracks_100k.tck` compartido y salten este comando (`bash scripts/02_tractography.sh --sin-tckgen`). → `out/tracks_100k.tck`
+Genera 100 000 hilos sin salir de la máscara. Es aleatorio: para obtener los mismos números, usen el `tracks_100k.tck` compartido y salten este comando (`02_tractography.sh` ya lo salta si `data/tracks_100k.tck` existe). → `data/tracks_100k.tck`
 
 ```bash
-tckstats out/tracks_100k.tck -dump out/longitudes.txt
+tckstats data/tracks_100k.tck -dump out/longitudes.txt
 ```
 Imprime estadísticas de longitud y guarda la longitud de cada hilo en mm. → `out/longitudes.txt`
 
 ```bash
-tcksift2 out/tracks_100k.tck out/fod.mif out/pesos_sift2.txt
+tcksift2 data/tracks_100k.tck out/fod.mif out/pesos_sift2.txt
 ```
 Calcula un peso SIFT2 por hilo. → `out/pesos_sift2.txt`
 
 ## Paso 3. COMMIT — `scripts/03_commit.sh`
 
 ```bash
-python scripts/correr_commit.py out/tracks_100k.tck --salida=out/commit
+python scripts/correr_commit.py data/tracks_100k.tck --salida=out/commit
 ```
 Calcula un peso COMMIT por hilo, en el mismo orden que el `.tck` (≈ 75 s en una Mac de 16 GB). → `out/commit/pesos_commit.txt`
 
@@ -106,26 +106,26 @@ tck2connectome data/GT/all_tracks.tck data/Parcels_free.nii out/gt.csv -symmetri
 Calcula el conectoma del ground truth, que sirve de referencia. → `out/gt.csv`
 
 ```bash
-tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_commit.csv \
+tck2connectome data/tracks_100k.tck data/Parcels_free.nii out/connectome_commit.csv \
   -tck_weights_in out/commit/pesos_commit.txt -symmetric -zero_diagonal
 ```
 Calcula la matriz sumando los pesos COMMIT de los hilos de cada par de regiones. Es la matriz que se entrega. → `out/connectome_commit.csv`
 
 ```bash
-tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_sin_pesos.csv \
+tck2connectome data/tracks_100k.tck data/Parcels_free.nii out/connectome_sin_pesos.csv \
   -out_assignments out/asignaciones.txt -symmetric -zero_diagonal
 ```
 Calcula la matriz contando hilos y guarda en qué par de regiones termina cada hilo. → `out/connectome_sin_pesos.csv`, `out/asignaciones.txt`
 
 ```bash
-tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_sift2.csv \
+tck2connectome data/tracks_100k.tck data/Parcels_free.nii out/connectome_sift2.csv \
   -tck_weights_in out/pesos_sift2.txt -symmetric -zero_diagonal
 ```
 Calcula la matriz ponderada por SIFT2. → `out/connectome_sift2.csv`
 
 ```bash
 paste -d' ' out/commit/pesos_commit.txt out/longitudes.txt | awk '{print $1*$2}' > out/pesos_commit_x_long.txt
-tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_commit_x_long.csv \
+tck2connectome data/tracks_100k.tck data/Parcels_free.nii out/connectome_commit_x_long.csv \
   -tck_weights_in out/pesos_commit_x_long.txt -symmetric -zero_diagonal
 ```
 Multiplica cada peso COMMIT por la longitud de su hilo y calcula la matriz con eso. → `out/connectome_commit_x_long.csv`
@@ -144,11 +144,24 @@ El aviso `nodes are missing from the parcellation image: 15` es esperable: la re
 
 ---
 
+## Paso 6. COMMIT2 (variante de COMMIT) — `scripts/06_commit2.sh`
+
+COMMIT2 lo corrió otra persona del equipo (λ = 1e-2, 62 779 de 100 000 hilos con peso > 0). Aquí solo se integra su resultado; ver `docs/resumen_del_flujo_de_post_procesamiento_commit2.md`.
+
+**Qué hay que entregar:** `out/commit2/pesos_commit2.txt`, los 100 000 pesos (`commit2_lam1e-2_weights.txt`), uno por hilo y en el orden de `data/tracks_100k.tck`. El `.tck` filtrado no sirve: pierde la posición de cada hilo. Antes de entregarlo, comprobar con `md5sum` que usaron el tractograma oficial.
+
+```bash
+bash scripts/06_commit2.sh
+```
+Verifica el `md5`, el número de pesos (100 000, ≥ 0, sin `NaN`), y genera `out/connectome_commit2.csv` (con `tck2connectome -symmetric -zero_diagonal`, 84 × 84 sin el nodo 0 de "sin región"), `out/matriz_commit2.xlsx` y `out/evaluacion_commit2.txt`. `comparar_pesos.py` y `comparar_matrices.py` lo incluyen solos cuando existe el archivo.
+
+Diferencia con su script original: ellos armaron una matriz de 85 × 85 (incluye el nodo 0) con la diagonal llena; aquí se usa `tck2connectome`, igual que los demás métodos.
+
 ## Números de control
 
 | Qué | Valor esperado |
 |---|---|
-| `tckstats out/tracks_100k.tck` | mean 92.13, median 95.21, count 100000 |
+| `tckstats data/tracks_100k.tck` | mean 92.13, median 95.21, count 100000 |
 | COMMIT: log | `100000 streamlines kept` |
 | COMMIT: NRMSE | 0.106 ± 0.039 |
 | COMMIT: pesos = 0 | 44 780 (45 %) |
@@ -182,5 +195,6 @@ Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % 
 |---|---|
 | 2026-11-06 | Datos de los zips organizados en `data/`. |
 | 2026-11-10 | Scripts 01–04 y evaluación tomados del otro equipo (corrección del eje y incluida). |
-| 2026-11-10 | Pasos 1–4 corridos en macOS con el `tracks_100k.tck` compartido: COMMIT en 1 min 15 s, 44 780 pesos en 0, AUC 0.829 por conexión. Coincide con los números de control. |
+| 2026-11-10 | Pasos 1–4 corridos en macOS con el `tracks_100k.tck` compartido (en `data/`): COMMIT en 1 min 15 s, 44 780 pesos en 0, AUC 0.829 por conexión. Coincide con los números de control. |
 | 2026-11-13 | Fusión con el repo `MaximilianoVM/diffw-MRI`: conda (`environment.yml`) y venv (`requirements.txt`) documentados como alternativas. |
+| 2026-11-13 | COMMIT2 integrado (`06_commit2.sh`, contrato `out/commit2/pesos_commit2.txt`); falta que entreguen los 100 000 pesos. |

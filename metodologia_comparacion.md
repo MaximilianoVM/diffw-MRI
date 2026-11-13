@@ -54,7 +54,7 @@ Sea $m_k$ el peso de la conexión $k$ en la matriz del método, $g_k$ su conteo 
 
 ## 2. Pesos de los métodos entre sí (`scripts/comparar_pesos.py`)
 
-Aquí no interviene el GT: solo cuánto se parecen los métodos. Esto solo es posible porque los tres pesan **los mismos hilos en el mismo orden** (`out/tracks_100k.tck`).
+Aquí no interviene el GT: solo cuánto se parecen los métodos. Esto solo es posible porque los tres pesan **los mismos hilos en el mismo orden** (`data/tracks_100k.tck`).
 
 | Métrica | Cómo se calcula | Por qué así |
 |---|---|---|

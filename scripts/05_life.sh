@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Paso 5: pesos de LiFE (DIPY), su matriz 84 x 84, evaluación y comparación de los tres métodos.
 # Uso (desde la raíz del proyecto, después de 01-04):  bash scripts/05_life.sh
-# Memoria: con los 100 000 hilos de out/tracks_100k.tck, LiFE pide ~20 GB (en una Mac de 16 GB no cabe).
-# Si el equipo de LiFE ya lo corrió con su script sobre out/tracks_100k.tck, pongan su
+# Memoria: con los 100 000 hilos de data/tracks_100k.tck, LiFE pide ~20 GB (en una Mac de 16 GB no cabe).
+# Si el equipo de LiFE ya lo corrió con su script sobre data/tracks_100k.tck, pongan su
 # life_weights.txt como out/life/pesos_life.txt y este paso se salta el ajuste.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY=${PY:-python}
 [ -x .venv/bin/python ] && PY=.venv/bin/python
-T=out/tracks_100k.tck
+T=data/tracks_100k.tck
 P=data/Parcels_free.nii
 opc="-symmetric -zero_diagonal -force"
 
-# data/ISMRM_2023_b3000.{nii.gz,bval,bvec} + out/tracks_100k.tck -> out/life/pesos_life.txt
+# data/ISMRM_2023_b3000.{nii.gz,bval,bvec} + data/tracks_100k.tck -> out/life/pesos_life.txt
 if [ ! -s out/life/pesos_life.txt ]; then
   $PY scripts/correr_life.py $T 2>&1 | tee out/life_log.txt
 fi

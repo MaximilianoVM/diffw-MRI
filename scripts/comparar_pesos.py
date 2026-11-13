@@ -6,7 +6,8 @@ Uso (desde la raíz del proyecto, con el entorno activado):
 Lee los pesos que existan de:
     COMMIT  out/commit/pesos_commit.txt
     SIFT2   out/pesos_sift2.txt
-    LiFE    out/life/pesos_life.txt   (lo corre el equipo de LiFE sobre out/tracks_100k.tck)
+    LiFE    out/life/pesos_life.txt   (lo corre el equipo de LiFE sobre data/tracks_100k.tck)
+    COMMIT2 out/commit2/pesos_commit2.txt   (variante regularizada de COMMIT; ver scripts/06_commit2.sh)
 
 Imprime:
     - resumen de cada método (ceros, mediana)
@@ -24,7 +25,7 @@ from scipy.stats import spearmanr
 
 os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 archivos = {"COMMIT": "out/commit/pesos_commit.txt", "SIFT2": "out/pesos_sift2.txt",
-            "LiFE": "out/life/pesos_life.txt"}
+            "LiFE": "out/life/pesos_life.txt", "COMMIT2": "out/commit2/pesos_commit2.txt"}
 W = {m: np.loadtxt(f, comments="#").ravel() for m, f in archivos.items() if os.path.exists(f)}
 for m in archivos:
     if m not in W:
@@ -63,7 +64,7 @@ for a, b in itertools.combinations(W, 2):
           f" | descartan los mismos: {(da & db).sum() / da.sum():.0%}"
           f" (al azar {frac:.0%}) | Jaccard {(da & db).sum() / (da | db).sum():.2f}")
 
-if len(W) == 3:
+if len(W) >= 3:
     todos = np.logical_and.reduce(list(descarta.values()))
     alguno = np.logical_or.reduce(list(descarta.values()))
     print(f"\nlos tres descartan: {todos.mean():.1%} de los hilos | al menos uno: {alguno.mean():.1%}")

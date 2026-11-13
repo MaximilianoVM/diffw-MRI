@@ -8,10 +8,14 @@ estado.md         qué está hecho y qué falta
 pipeline.md       los pasos, comando por comando
 environment.yml   entorno conda (WSL/Linux): MRtrix + COMMIT
 requirements.txt  versiones exactas de Python (venv, macOS)
-data/             entrada (no se toca, no se sube; ver data/README.md)
+data/             entrada y tracks_100k.tck (no se sube; ver data/README.md)
 out/              todo lo generado, plano (COMMIT en out/commit/); no se sube
 integracion_metodos.md  COMMIT, SIFT2 y LiFE sobre el mismo tractograma: diferencias con los equipos y comparación
-scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh
+guia_equipo.md    reglas para todos los equipos y sus Claudes (contrato de pesos)
+explicacion_commit.md  qué hace COMMIT y cómo se lee la matriz
+aclaraciones_equipo.md  qué hay que aclarar entre equipos
+consideraciones_normalizacion_ricardo.md  ajustes a la idea de normalización por percentil
+scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh  06_commit2.sh
                   correr_commit.py  correr_life.py  exportar_matriz84.py  evaluar_pesos.py
                   comparar_matrices.py  comparar_pesos.py
 team_commit/      pipeline anterior del otro equipo (referencia)

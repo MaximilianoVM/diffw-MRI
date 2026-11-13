@@ -25,10 +25,11 @@ matrices = {
     "SIFT2": "out/connectome_sift2.csv",
     "COMMIT": "out/connectome_commit.csv",
     "LiFE": "out/connectome_life.csv",
+    "COMMIT2": "out/connectome_commit2.csv",
     "COMMIT x longitud": "out/connectome_commit_x_long.csv",
     "LiFE x longitud": "out/connectome_life_x_long.csv",
     "equipo SIFT2 (diagonal en 0)": "out/equipos/Connectome_SIFT2_100k_diag0.csv",
-    "equipo LiFE (su tractograma)": "out/equipos/conn_life_full.csv",
+    "equipo LiFE (su tractograma)": "docs/conn_life_full.csv",
 }
 
 filas = []

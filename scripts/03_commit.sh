@@ -6,5 +6,5 @@ cd "$(dirname "$0")/.."
 PY=${PY:-python}
 [ -x .venv/bin/python ] && PY=.venv/bin/python
 
-# out/dwi.mif + out/mask.mif + out/fod.mif + out/tracks_100k.tck -> out/commit/pesos_commit.txt
-$PY scripts/correr_commit.py out/tracks_100k.tck --salida=out/commit 2>&1 | tee out/commit_log.txt
+# out/dwi.mif + out/mask.mif + out/fod.mif + data/tracks_100k.tck -> out/commit/pesos_commit.txt
+$PY scripts/correr_commit.py data/tracks_100k.tck --salida=out/commit 2>&1 | tee out/commit_log.txt

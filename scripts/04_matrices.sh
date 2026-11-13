@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PY=${PY:-python}
 [ -x .venv/bin/python ] && PY=.venv/bin/python
-T=out/tracks_100k.tck
+T=data/tracks_100k.tck
 P=data/Parcels_free.nii
 opc="-symmetric -zero_diagonal -force"
 

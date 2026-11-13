@@ -1,7 +1,7 @@
 """Calcula los pesos de COMMIT (un número por hilo) para un tractograma .tck.
 
 Uso (desde la raíz del proyecto, con el entorno activado):
-    python scripts/correr_commit.py                                   # usa out/tracks_100k.tck
+    python scripts/correr_commit.py                                   # usa data/tracks_100k.tck
     python scripts/correr_commit.py out/otro.tck
     python scripts/correr_commit.py --sin-corregir-y                  # prueba de control
     python scripts/correr_commit.py otro.tck --salida=out/otra_carpeta
@@ -37,7 +37,7 @@ else:
 os.chdir(PROY)
 
 OUT = "out"
-tck_rel = args[0] if args else f"{OUT}/tracks_100k.tck"
+tck_rel = args[0] if args else "data/tracks_100k.tck"
 tck = os.path.join(PROY, os.path.relpath(os.path.realpath(tck_rel), REAL))
 salida = [a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--salida=")]
 C = os.path.join(PROY, salida[0] if salida else

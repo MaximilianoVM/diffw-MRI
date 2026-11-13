@@ -9,6 +9,7 @@ ISMRM_2023_b3000.bvec
 Parcels_free.nii          parcelación (84 regiones)
 T1.nii.gz, T1_dwi.nii.gz  anatómicas
 GT/                       ground truth: 21 haces .tck + all_tracks.tck
+tracks_100k.tck           tractograma oficial (100 000 hilos), compartido por Drive; no se regenera
 ```
 
 Después de bajarlos, desde la raíz del proyecto: `mkdir -p out` y sigue `pipeline.md`.
