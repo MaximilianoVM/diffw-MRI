@@ -10,8 +10,10 @@ environment.yml   entorno conda (WSL/Linux): MRtrix + COMMIT
 requirements.txt  versiones exactas de Python (venv, macOS)
 data/             entrada (no se toca, no se sube; ver data/README.md)
 out/              todo lo generado, plano (COMMIT en out/commit/); no se sube
-scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh
-                  correr_commit.py  exportar_matriz84.py  evaluar_pesos.py
+integracion_metodos.md  COMMIT, SIFT2 y LiFE sobre el mismo tractograma: diferencias con los equipos y comparación
+scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh
+                  correr_commit.py  correr_life.py  exportar_matriz84.py  evaluar_pesos.py
+                  comparar_matrices.py  comparar_pesos.py
 team_commit/      pipeline anterior del otro equipo (referencia)
 extras/           guías, versiones anteriores y exploración (local, no se sube)
 ```

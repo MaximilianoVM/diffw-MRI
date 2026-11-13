@@ -16,5 +16,5 @@ tckstats out/tracks_100k.tck
 # out/tracks_100k.tck -> out/longitudes.txt (mm, una por hilo)
 tckstats -force out/tracks_100k.tck -dump out/longitudes.txt > /dev/null
 
-# out/tracks_100k.tck + out/fod.mif -> out/pesos_sift2.txt
-tcksift2 -force out/tracks_100k.tck out/fod.mif out/pesos_sift2.txt
+# out/tracks_100k.tck + out/fod.mif -> out/pesos_sift2.txt (+ mu, como en docs/Comandos SIFT2.txt)
+tcksift2 -force out/tracks_100k.tck out/fod.mif out/pesos_sift2.txt -out_mu out/mu_sift2.txt

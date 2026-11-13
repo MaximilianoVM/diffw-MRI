@@ -1,0 +1,236 @@
+================================================================================
+LiFE - COMANDOS PARA OBTENER LA MATRIZ DE CONECTIVIDAD PONDERADA
+================================================================================
+Ruta base usada:  /home/jaziv/desafio/datos/dataset/DWIs/
+Entornos:         dmri   -> MRtrix (tckgen, tck2connectome)
+                  pydmri -> Python (DIPY / LiFE, figuras)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+PASO 0 - PRERREQUISITO: el tractograma (entorno dmri)
+--------------------------------------------------------------------------------
+LiFE necesita un tractograma. Si ya existe tracks.tck, saltar al Paso 1.
+
+conda activate dmri
+cd ~/desafio/datos/dataset/DWIs
+
+dwi2response tournier ISMRM_2023_b3000.nii.gz response.txt \
+  -fslgrad ISMRM_2023_b3000.bvec ISMRM_2023_b3000.bval \
+  -mask ISMRM_2023_b3000_mask.nii -force
+
+dwi2fod csd ISMRM_2023_b3000.nii.gz response.txt ODF.nii \
+  -fslgrad ISMRM_2023_b3000.bvec ISMRM_2023_b3000.bval \
+  -mask ISMRM_2023_b3000_mask.nii -force
+
+tckgen -algorithm iFOD2 ODF.nii tracks.tck \
+  -seed_image ISMRM_2023_b3000_mask.nii -select 100000 -force
+
+
+--------------------------------------------------------------------------------
+PASO 1 - AJUSTAR LiFE Y OBTENER LOS PESOS (entorno pydmri)
+--------------------------------------------------------------------------------
+Crear el script (pegar el bloque completo, incluido el EOF final):
+
+cat > ~/desafio/analisis_life.py << 'EOF'
+import numpy as np
+import nibabel as nib
+from nibabel.streamlines import load as load_tck
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import gradient_table
+from dipy.tracking.life import FiberModel
+
+base = "/home/jaziv/desafio/datos/dataset/DWIs/"
+N_SUB = 20000
+SEED  = 0
+
+img  = nib.load(base + "ISMRM_2023_b3000.nii.gz")
+data = img.get_fdata(dtype=np.float32)
+print("DWI:", data.shape)
+
+bvals, bvecs = read_bvals_bvecs(base + "ISMRM_2023_b3000.bval",
+                                base + "ISMRM_2023_b3000.bvec")
+gtab = gradient_table(bvals, bvecs=bvecs)
+print("b0:", int(gtab.b0s_mask.sum()), " direcciones DW:", int((~gtab.b0s_mask).sum()))
+
+tck = load_tck(base + "tracks.tck")
+sl  = list(tck.streamlines)
+print("streamlines en el tractograma:", len(sl))
+
+rng = np.random.default_rng(SEED)
+idx = np.sort(rng.choice(len(sl), size=min(N_SUB, len(sl)), replace=False))
+sub = [sl[i] for i in idx]
+print("submuestra:", len(sub))
+
+print("ajustando LiFE ...")
+fit  = FiberModel(gtab).fit(data, sub, np.linalg.inv(img.affine))
+beta = np.asarray(fit.beta)
+
+np.savetxt(base + "life_weights.txt", beta)
+np.savetxt(base + "life_index.txt", idx, fmt="%d")
+
+print("beta  min/mediana/media/max: %.4g %.4g %.4g %.4g" %
+      (beta.min(), np.median(beta), beta.mean(), beta.max()))
+print("fraccion con beta == 0: %.2f%%" % (100 * np.mean(beta == 0)))
+EOF
+
+Ejecutarlo:
+
+conda activate pydmri
+/usr/bin/time -v python ~/desafio/analisis_life.py 2>&1 | tail -40
+
+Salidas:  life_weights.txt   un beta por streamline de la submuestra
+          life_index.txt     indice de cada uno dentro de tracks.tck
+
+OJO CON EL AFFINE: hay que pasar np.linalg.inv(img.affine), NO img.affine.
+El docstring de DIPY dice que espera el voxel_to_rasmm, pero el codigo aplica
+el affine directamente a los streamlines y redondea para obtener indices de
+voxel. Con img.affine da:
+    IndexError: index 194 is out of bounds for axis 0 with size 90
+
+SI MUERE CON "Killed" es falta de memoria. Bajar la submuestra:
+    sed -i 's/^N_SUB = 20000/N_SUB = 5000/' ~/desafio/analisis_life.py
+
+
+--------------------------------------------------------------------------------
+PASO 2 - ESCRIBIR EL .tck DE LA SUBMUESTRA (entorno pydmri)
+--------------------------------------------------------------------------------
+tck2connectome exige que el tractograma y el archivo de pesos tengan el mismo
+numero de streamlines y en el mismo orden. Como LiFE se ajusto sobre una
+submuestra, hay que escribir un .tck que contenga solo esos streamlines.
+
+cat > ~/desafio/ver_life.py << 'EOF'
+import numpy as np, nibabel as nib
+from nibabel.streamlines import load as load_tck, Tractogram
+import matplotlib; matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+base = "/home/jaziv/desafio/datos/dataset/DWIs/"
+b   = np.loadtxt(base + "life_weights.txt")
+idx = np.loadtxt(base + "life_index.txt", dtype=int)
+
+print("n =", b.size)
+print("primeros 10 pesos:", np.array2string(b[:10], precision=5))
+for q in (0, 10, 25, 50, 75, 90, 100):
+    print("  percentil %3d: %.5g" % (q, np.percentile(b, q)))
+print("beta == 0: %d (%.2f%%)" % ((b == 0).sum(), 100*np.mean(b == 0)))
+print("el 10%% con mas peso concentra el %.1f%% del peso total"
+      % (100 * np.sort(b)[-b.size//10:].sum() / b.sum()))
+
+fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+ax[0].hist(b, bins=80)
+ax[0].set_xlabel("beta LiFE"); ax[0].set_ylabel("streamlines")
+ax[0].set_title("Todos (n=%d)" % b.size)
+ax[1].hist(b[b > 0], bins=80)
+ax[1].set_xlabel("beta LiFE"); ax[1].set_ylabel("streamlines")
+ax[1].set_title("Solo beta > 0 (n=%d)" % (b > 0).sum())
+fig.tight_layout(); fig.savefig(base + "hist_life.png", dpi=150)
+
+tck = load_tck(base + "tracks.tck")
+sub = [tck.streamlines[i] for i in idx]
+nib.streamlines.save(Tractogram(sub, affine_to_rasmm=np.eye(4)),
+                     base + "tracks_life.tck")
+print("escrito tracks_life.tck con", len(sub), "streamlines")
+EOF
+
+conda activate pydmri
+python ~/desafio/ver_life.py
+
+Salidas:  tracks_life.tck   los streamlines de la submuestra, en orden
+          hist_life.png     distribucion de los pesos
+
+
+--------------------------------------------------------------------------------
+PASO 3 - CONSTRUIR LA MATRIZ (entorno dmri)
+--------------------------------------------------------------------------------
+Dos matrices: la ponderada por LiFE y su control sin ponderar.
+
+conda activate dmri
+cd ~/desafio/datos/dataset/DWIs
+
+tck2connectome tracks_life.tck ../Parcels_free.nii conn_life.csv \
+  -tck_weights_in life_weights.txt -symmetric -force
+
+tck2connectome tracks_life.tck ../Parcels_free.nii conn_life_raw.csv \
+  -symmetric -force
+
+Salidas:  conn_life.csv       84x84, suma de betas de LiFE por arista (decimales)
+          conn_life_raw.csv   84x84, conteo de streamlines por arista (enteros)
+
+AVISO ESPERADO, es benigno:
+    "The following nodes are missing from the parcellation image: 15"
+La etiqueta 15 no tiene voxeles en Parcels_free.nii, asi que esa fila y columna
+quedan en cero. Normal en un phantom simulado.
+
+
+--------------------------------------------------------------------------------
+PASO 4 - VER LA MATRIZ (entorno pydmri)
+--------------------------------------------------------------------------------
+cat > ~/desafio/ver_matriz_life.py << 'EOF'
+import numpy as np
+import matplotlib; matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+base = "/home/jaziv/desafio/datos/dataset/DWIs/"
+A = np.loadtxt(base + "conn_life.csv", delimiter=",")
+B = np.loadtxt(base + "conn_life_raw.csv", delimiter=",")
+print("forma:", A.shape)
+print("aristas no nulas  ponderada LiFE: %d | conteo crudo: %d"
+      % ((A > 0).sum()//2, (B > 0).sum()//2))
+print("peso total: %.4g | suma de conteos: %d" % (A.sum()/2, int(B.sum()//2)))
+print("simetrica:", np.allclose(A, A.T))
+
+fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+for a, M, t in zip(ax, (B, A), ("Conteo crudo (20k streamlines)",
+                                "Ponderada por LiFE")):
+    im = a.imshow(np.log1p(M), cmap="magma")
+    a.set_title(t + "\n(escala log1p)")
+    a.set_xlabel("nodo"); a.set_ylabel("nodo")
+    fig.colorbar(im, ax=a, fraction=0.046)
+fig.tight_layout(); fig.savefig(base + "matriz_life.png", dpi=150)
+print("figura:", base + "matriz_life.png")
+EOF
+
+conda activate pydmri
+python ~/desafio/ver_matriz_life.py
+
+
+--------------------------------------------------------------------------------
+PASO 5 - PASAR LOS RESULTADOS A WINDOWS
+--------------------------------------------------------------------------------
+cp ~/desafio/datos/dataset/DWIs/conn_life*.csv /mnt/c/Users/jaziv/Downloads/
+cp ~/desafio/datos/dataset/DWIs/*.png          /mnt/c/Users/jaziv/Downloads/
+
+Los .csv se abren con doble clic en Excel. Dos avisos:
+  - No traen encabezados: son 84 filas x 84 columnas de numeros. La etiqueta de
+    cada nodo es su posicion (fila 1 = nodo 1).
+  - Si Excel esta en espanol puede malinterpretar el punto decimal. En ese caso
+    usar Datos -> Obtener datos -> Desde archivo de texto/CSV, eligiendo punto
+    como separador decimal.
+
+
+================================================================================
+RESULTADOS OBTENIDOS EN ESTA CORRIDA
+================================================================================
+
+LiFE, 20 000 streamlines:
+  memoria maxima                       1.88 GiB
+  beta  min / mediana / media / max    0 / 0.002417 / 0.003713 / 0.03789
+  beta exactamente 0                   29.63 %
+
+(con 5 000 streamlines: 12.7 s, 775 MiB, 24.00 % de betas en cero)
+
+Matriz de conectividad:
+  forma                                      84 x 84, simetrica
+  aristas no nulas, conteo crudo             583
+  aristas no nulas, ponderada por LiFE       511
+  streamlines asignados a alguna arista      14 588 de 20 000
+  peso total                                 52.2
+
+Lectura: LiFE elimina 72 conexiones por completo (12.3 % de las aristas). En
+esas 72, todos los streamlines que las formaban recibieron beta = 0. Los 5 412
+streamlines restantes (27 %) no conectan dos regiones del atlas y los descarta
+tck2connectome antes de que los pesos intervengan; eso depende de la siembra de
+tckgen, no de LiFE.
+
+================================================================================

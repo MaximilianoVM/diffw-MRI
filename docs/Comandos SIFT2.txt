@@ -1,0 +1,54 @@
+Estimación de la función de respuesta
+
+dwi2response tournier \
+ISMRM_2023_b3000.nii.gz \
+response.txt \
+-fslgrad ISMRM_2023_b3000.bvec \
+ISMRM_2023_b3000.bval \
+-mask ISMRM_2023_b3000_mask.nii
+
+
+Generación de las FOD mediante CSD
+
+dwi2fod csd \
+ISMRM_2023_b3000.nii.gz \
+response.txt \
+ODF.nii \
+-fslgrad ISMRM_2023_b3000.bvec \
+ISMRM_2023_b3000.bval \
+-mask ISMRM_2023_b3000_mask.nii
+
+
+Aplicación de SIFT2
+
+tcksift2 \
+../../Fibers/tck/all_tracks.tck \
+ODF.nii \
+weights.txt \
+-out_mu mu.txt
+
+
+Medición de tiempo y consumo de memoria
+
+/usr/bin/time -v \
+tcksift2 \
+../../Fibers/tck/all_tracks.tck \
+ODF.nii \
+weights.txt \
+-out_mu mu.txt
+
+
+Construcción de la matriz de conectividad ponderada
+
+tck2connectome \
+../Fibers/tck/all_tracks.tck \
+Parcels_free.nii \
+Connectome_SIFT2.csv \
+-tck_weights_in DWIs/weights.txt \
+-symmetric \
+-force
+
+
+Verificación del archivo de pesos
+
+wc -w weights.txt
