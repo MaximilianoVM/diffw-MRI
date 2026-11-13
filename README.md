@@ -1,20 +1,32 @@
-# Filtrado de streamlines en DW-MRI (desafío ISMRM)
+# Proyecto Cerebro: ¿cómo saber si un streamline es bueno?
 
-Generamos un tractograma del fantoma ISMRM, calculamos pesos por streamline con
-**SIFT2, COMMIT y LiFE** y decidimos cuáles conservar.
+Desafío DW-MRI (Laboratorio de Resolución de Problemas I, CIMAT). Sobre el fantoma ISMRM 2015 se genera un tractograma y se pesa cada hilo con COMMIT, SIFT2 y LiFE para decidir cuáles conservar. Esta parte produce la matriz de conectividad 84 × 84 ponderada por COMMIT.
 
 ```
-README.md        este archivo
-environment.yml  entorno conda (MRtrix + COMMIT)
-pipeline.md      los pasos explicados comando por comando
-data/            entrada (no se toca)
-out/             todo lo que generamos
-scripts/         01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh
-                 correr_commit.py  exportar_matriz84.py  evaluar_pesos.py
-team_commit/     pipeline anterior del otro equipo (referencia)
-equipo_chat/     intercambio con el otro equipo (local, no se sube)
+README.md         este archivo
+estado.md         qué está hecho y qué falta
+pipeline.md       los pasos, comando por comando
+environment.yml   entorno conda (WSL/Linux): MRtrix + COMMIT
+requirements.txt  versiones exactas de Python (venv, macOS)
+data/             entrada (no se toca, no se sube; ver data/README.md)
+out/              todo lo generado, plano (COMMIT en out/commit/); no se sube
+scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh
+                  correr_commit.py  exportar_matriz84.py  evaluar_pesos.py
+team_commit/      pipeline anterior del otro equipo (referencia)
+extras/           guías, versiones anteriores y exploración (local, no se sube)
 ```
 
-Entorno: `conda env create -f environment.yml && conda activate dwmri`.
-Los datos no se suben a Git: ver `data/README.md`.
-Para correr todo: `bash scripts/01_preprocess.sh`, luego `02`, `03` y `04`.
+Entorno, una de dos:
+
+```bash
+conda env create -f environment.yml && conda activate dwmri                                  # WSL/Linux
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && source .venv/bin/activate   # macOS (+ MRtrix3 3.0.8)
+```
+
+Para correr todo:
+
+```bash
+bash scripts/01_preprocess.sh && bash scripts/02_tractography.sh && bash scripts/03_commit.sh && bash scripts/04_matrices.sh
+```
+
+Resultado: `out/matriz_peso_commit_84x84_corregida.xlsx`. COMMIT falla con rutas con acentos o espacios; `correr_commit.py` lo resuelve creando `~/Proyecto_2_cerebro` (ver `pipeline.md`).

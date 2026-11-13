@@ -1,6 +1,6 @@
 """Calcula los pesos de COMMIT (un número por hilo) para un tractograma .tck.
 
-Uso (desde la raíz del proyecto):
+Uso (desde la raíz del proyecto, con el entorno activado):
     python scripts/correr_commit.py                                   # usa out/tracks_100k.tck
     python scripts/correr_commit.py out/otro.tck
     python scripts/correr_commit.py --sin-corregir-y                  # prueba de control
@@ -19,10 +19,21 @@ import numpy as np
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 corregir_y = "--sin-corregir-y" not in sys.argv
 
-# COMMIT (código en C) falla con rutas que llevan acentos o espacios.
-# Si la ruta de este proyecto los tiene, muévelo a una ruta sin ellos.
-PROY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-REAL = PROY
+# COMMIT (código en C) falla con rutas que llevan acentos ("RESOLUCIÓN") o espacios.
+# Solo en ese caso se trabaja a través del acceso directo ~/Proyecto_2_cerebro, y se avisa.
+REAL = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+if REAL.isascii() and " " not in REAL:
+    PROY = REAL
+else:
+    PROY = os.path.expanduser("~/Proyecto_2_cerebro")
+    if not os.path.lexists(PROY):
+        os.symlink(REAL, PROY)
+        print(f"AVISO: la ruta del proyecto tiene acentos o espacios y COMMIT no la acepta.\n"
+              f"       Creé el acceso directo {PROY} -> {REAL}\n"
+              f"       (se puede borrar con: rm {PROY})")
+    elif not os.path.samefile(PROY, REAL):  # samefile: macOS escribe la "Ó" de dos formas
+        sys.exit(f"ERROR: {PROY} ya existe y no apunta a este proyecto ({REAL}).\n"
+                 f"       Bórralo o mueve el proyecto a una ruta sin acentos ni espacios.")
 os.chdir(PROY)
 
 OUT = "out"

@@ -1,6 +1,6 @@
 """Verifica la matriz 84 x 84 de tck2connectome, la compara con el ground truth y la guarda en Excel.
 
-Uso (desde la raíz del proyecto):
+Uso (desde la raíz del proyecto, con el entorno activado):
     python scripts/exportar_matriz84.py out/connectome_commit.csv \
         out/gt.csv out/matriz_peso_commit_84x84_corregida.xlsx
 """

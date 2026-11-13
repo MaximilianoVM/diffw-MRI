@@ -1,186 +1,179 @@
-# Pipeline: del DWI a la matriz de peso 84 × 84 (COMMIT)
+# Pipeline: del DWI a la matriz 84 × 84 ponderada por COMMIT
 
-Todo se corre desde la raíz del proyecto. Entrada en `data/`, todo lo generado en `out/`.
-Cada paso tiene un script que junta sus comandos (`bash scripts/0N_*.sh`). Abajo está cada comando explicado, para que puedas escribirlo a mano.
+Todo se corre desde la raíz del proyecto. Las entradas están en `data/` y todo lo generado va a `out/`.
+Cada paso es un script (`bash scripts/0N_*.sh`). Abajo están los mismos comandos, uno por uno, para escribirlos a mano.
 
-Archivos de entrada (en `data/`): `ISMRM_2023_b3000.{nii.gz,bval,bvec}`, `Parcels_free.nii`, `T1.nii.gz`, `GT/` (21 haces + `all_tracks.tck`).
+## Antes de empezar
 
-Entorno (una sola vez):
+Entorno, opción A — conda (WSL/Linux; trae MRtrix 3.0.8, Python 3.13, COMMIT 2.4.2 y AMICO 2.1.1):
 
 ```bash
-conda env create -f environment.yml
-conda activate dwmri
+conda env create -f environment.yml   # una sola vez
+conda activate dwmri                  # en cada terminal nueva
 ```
-Trae MRtrix 3.0.8, Python 3.13, COMMIT 2.4.2 y AMICO 2.1.1 (las mismas versiones del otro equipo).
 
-| Paso | Script | Sale |
-|---|---|---|
-| 1. Preprocesamiento | `scripts/01_preprocess.sh` | `out/dwi.mif`, `mask.mif`, `fod.mif` |
-| 2. Tractograma y SIFT2 | `scripts/02_tractography.sh` | `out/tracks_100k.tck`, `pesos_sift2.txt` |
-| 3. COMMIT | `scripts/03_commit.sh` | `out/commit/pesos_commit.txt` |
-| 4. Matrices 84 × 84 | `scripts/04_matrices.sh` | `out/matriz_peso_commit_84x84_corregida.xlsx` |
+Opción B — venv (macOS; MRtrix3 3.0.8 instalado aparte y en el `PATH`, `mrconvert -version`):
 
----
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # una sola vez
+source .venv/bin/activate                                            # en cada terminal nueva
+```
 
-## 1. Preprocesamiento (MRtrix)
+Las dos opciones fijan las mismas versiones de COMMIT, AMICO, numpy, etc. Luego:
 
 ```bash
 mkdir -p out
 ```
-Crea la carpeta `out/`.
 
-**1.1 Juntar la imagen con sus gradientes**
+Entradas en `data/` (ver `data/README.md`): `ISMRM_2023_b3000.{nii.gz,bval,bvec}`, `Parcels_free.nii`, `T1.nii.gz`, `GT/` (21 haces + `all_tracks.tck`).
+
+> **Rutas con acentos o espacios:** COMMIT falla con ellas. Si la ruta del proyecto las tiene, `correr_commit.py` crea el acceso directo `~/Proyecto_2_cerebro` y lo avisa en pantalla. La alternativa es mover el proyecto a una ruta sin acentos ni espacios.
+
+---
+
+## Paso 1. Gradientes, máscara y FOD — `scripts/01_preprocess.sh`
+
 ```bash
 mrconvert data/ISMRM_2023_b3000.nii.gz out/dwi_original.mif \
   -fslgrad data/ISMRM_2023_b3000.bvec data/ISMRM_2023_b3000.bval
 ```
-Convierte la imagen al formato `.mif` de MRtrix y le mete adentro las direcciones (`.bvec`) y los valores b (`.bval`).
+Junta la imagen y sus gradientes originales en un solo archivo. → `out/dwi_original.mif`
 
-**1.2 Invertir el eje y de los gradientes (corrección importante)**
 ```bash
 mrinfo out/dwi_original.mif -dwgrad | awk '{print $1, -$2, $3, $4}' > out/gradientes_y.b
+```
+Imprime la tabla de gradientes, le cambia el signo a la columna *y* y la guarda. → `out/gradientes_y.b`
+
+```bash
 mrconvert out/dwi_original.mif out/dwi.mif -grad out/gradientes_y.b
 ```
-El `.bvec` viene con el eje `y` al revés respecto a lo que espera MRtrix. Si no se corrige, los hilos salen cortados (≈ 42 mm de media en vez de ≈ 92 mm).
-- `mrinfo -dwgrad` imprime la tabla de gradientes (4 columnas: x, y, z, b).
-- `awk '{print $1, -$2, $3, $4}'` le cambia el signo a la segunda columna (y).
-- `mrconvert -grad` vuelve a guardar la imagen con esa tabla corregida: `out/dwi.mif`.
+Crea la DWI con los gradientes corregidos. Desde aquí no se vuelve a usar `-fslgrad`. → `out/dwi.mif`
 
-**A partir de aquí no se usa más `-fslgrad`.** Siempre `out/dwi.mif`, que ya lleva los gradientes corregidos.
-
-Cómo se comprobó que hacía falta (opcional): `dwigradcheck out/dwi_original.mif -mask out/mask.mif`.
-
-**1.3 Máscara del cerebro**
 ```bash
 dwi2mask out/dwi.mif out/mask.mif
 ```
-Marca qué vóxeles son cerebro (1) y cuáles aire (0).
+Calcula la máscara del cerebro. → `out/mask.mif`
 
-**1.4 Función de respuesta**
 ```bash
 dwi2response tournier out/dwi.mif out/respuesta.txt -mask out/mask.mif
 ```
-Estima cómo se ve la señal de **una sola fibra**.
+Estima la señal de una sola fibra. → `out/respuesta.txt`
 
-**1.5 FOD (hacia dónde apuntan las fibras en cada vóxel)**
 ```bash
 dwi2fod csd out/dwi.mif out/respuesta.txt out/fod.mif -mask out/mask.mif
 ```
-Con la señal de una fibra, separa las fibras de cada vóxel. Es lo que usa el tractograma.
+Calcula la FOD (orientaciones de fibras en cada vóxel) por deconvolución esférica. → `out/fod.mif`
 
-Revisar: `mrview out/mask.mif -odf.load_sh out/fod.mif` (los lóbulos deben seguir la materia blanca).
+## Paso 2. Tractograma y SIFT2 — `scripts/02_tractography.sh`
 
-### Revisar el `.bvec` (opcional)
-3 filas (x, y, z) × 65 columnas. Cada columna debe medir 1; la del b0 mide 0.
-```bash
-awk '{for(i=1;i<=NF;i++) v[NR,i]=$i; n=NF}
-     END{for(i=1;i<=n;i++){s=sqrt(v[1,i]^2+v[2,i]^2+v[3,i]^2); if(i==1||s<m)m=s; if(i==1||s>M)M=s}
-         print "norma mínima",m,"máxima",M}' data/ISMRM_2023_b3000.bvec
-```
-Debe dar mínima ≈ 0 y máxima ≈ 1.
-
----
-
-## 2. Tractograma y SIFT2 (MRtrix)
-
-**2.1 Tractograma de 100 000 hilos**
 ```bash
 tckgen out/fod.mif out/tracks_100k.tck -algorithm iFOD2 \
   -seed_image out/mask.mif -mask out/mask.mif -select 100000
-tckstats out/tracks_100k.tck
 ```
-- `tckgen -algorithm iFOD2` genera hilos siguiendo la FOD (método probabilístico).
-- `-seed_image`: los hilos empiezan en puntos al azar del cerebro. `-mask`: no pueden salir del cerebro.
-- `-select 100000`: se detiene al tener 100 000 hilos.
-- `tckstats` muestra el resumen. Se espera media ≈ 92 mm y `count 100000`.
+Genera 100 000 hilos sin salir de la máscara. Es aleatorio: para obtener los mismos números, usen el `tracks_100k.tck` compartido y salten este comando (`bash scripts/02_tractography.sh --sin-tckgen`). → `out/tracks_100k.tck`
 
-`tckgen` es aleatorio: cada corrida da un tractograma distinto. Para tener los mismos números que el otro equipo, usen su `tracks_100k.tck` (109 MB, por Drive) y corran `bash scripts/02_tractography.sh --sin-tckgen`.
-
-**2.2 Longitud de cada hilo**
 ```bash
 tckstats out/tracks_100k.tck -dump out/longitudes.txt
 ```
-Guarda la longitud en mm de cada hilo, una por línea (se usa después).
+Imprime estadísticas de longitud y guarda la longitud de cada hilo en mm. → `out/longitudes.txt`
 
-**2.3 SIFT2 (para comparar)**
 ```bash
 tcksift2 out/tracks_100k.tck out/fod.mif out/pesos_sift2.txt
 ```
-Da un peso a cada hilo según qué tanto aporta a la FOD.
+Calcula un peso SIFT2 por hilo. → `out/pesos_sift2.txt`
 
----
-
-## 3. COMMIT (Python)
+## Paso 3. COMMIT — `scripts/03_commit.sh`
 
 ```bash
 python scripts/correr_commit.py out/tracks_100k.tck --salida=out/commit
 ```
-Tarda ≈ 75 s y usa unos pocos GB de RAM. Hace lo siguiente:
-1. Convierte `dwi.mif` y `mask.mif` a NIfTI (el formato que lee COMMIT).
-2. Saca hasta 3 picos de fibra por vóxel con `sh2peaks` (los pide el modelo para el agua alrededor de los axones).
-3. Escribe los gradientes desde `dwi.mif`, o sea ya con `y` corregido.
-4. Construye el diccionario (qué vóxeles cruza cada hilo) con `trk2dictionary`, usando `fiber_shift=0.5`: MRtrix pone el centro del vóxel en 0 y COMMIT en 0.5.
-5. Ajusta el modelo Stick-Zeppelin-Ball. Stick = agua dentro del axón; Zeppelin = agua alrededor; Ball = agua libre.
-6. Guarda un peso por hilo en `out/commit/pesos_commit.txt`, en el mismo orden que el `.tck`.
+Calcula un peso COMMIT por hilo, en el mismo orden que el `.tck` (≈ 75 s en una Mac de 16 GB). → `out/commit/pesos_commit.txt`
 
-Se espera: NRMSE 0.106 ± 0.039 y 44 780 pesos en 0 (45 %).
+Por dentro, el script hace esto:
+1. Pasa `dwi.mif` y `mask.mif` a NIfTI.
+2. Saca hasta 3 picos por vóxel de la FOD (`sh2peaks`), que necesita el compartimento extra-axonal.
+3. Escribe los gradientes ya corregidos en el formato de AMICO.
+4. Construye el diccionario con `fiber_shift=0.5`, porque MRtrix pone el centro del vóxel en 0 y COMMIT en 0.5.
+5. Ajusta el modelo Stick-Zeppelin-Ball con `d_par=1.7e-3`, `d_perps_zep=[0.51e-3]` y `d_isos=[1.7e-3, 3.0e-3]`.
 
-Cuidado: COMMIT falla si la ruta del proyecto tiene acentos o espacios.
-Si da `Killed` es falta de RAM: usa un subconjunto (`tckedit out/tracks_100k.tck -number 20000 out/tracks_20k.tck`) y corre todos los métodos sobre ese mismo archivo.
+## Paso 4. Matrices, Excel y evaluación — `scripts/04_matrices.sh`
 
----
-
-## 4. Matrices 84 × 84 (MRtrix + Python)
+Los cuatro `tck2connectome` usan `data/Parcels_free.nii` y las opciones `-symmetric -zero_diagonal`.
 
 ```bash
-bash scripts/04_matrices.sh
-```
-
-Lo que hace, comando por comando:
-
-```bash
-# conectoma del ground truth: qué pares de regiones están realmente conectados (529)
 tck2connectome data/GT/all_tracks.tck data/Parcels_free.nii out/gt.csv -symmetric -zero_diagonal
+```
+Calcula el conectoma del ground truth, que sirve de referencia. → `out/gt.csv`
 
-# la matriz que se entrega: cada hilo cuenta con su peso de COMMIT
+```bash
 tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_commit.csv \
   -tck_weights_in out/commit/pesos_commit.txt -symmetric -zero_diagonal
 ```
-`tck2connectome` cuenta cuántos hilos unen cada par de las 84 regiones de `Parcels_free.nii`. `-tck_weights_in` hace que cada hilo valga su peso en vez de 1. `-symmetric` llena la matriz por los dos lados y `-zero_diagonal` pone 0 en la diagonal.
+Calcula la matriz sumando los pesos COMMIT de los hilos de cada par de regiones. Es la matriz que se entrega. → `out/connectome_commit.csv`
 
-El aviso `nodes are missing from the parcellation image: 15` es normal: la región 15 no existe en la imagen, su fila y columna quedan en 0.
+```bash
+tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_sin_pesos.csv \
+  -out_assignments out/asignaciones.txt -symmetric -zero_diagonal
+```
+Calcula la matriz contando hilos y guarda en qué par de regiones termina cada hilo. → `out/connectome_sin_pesos.csv`, `out/asignaciones.txt`
 
-Además el script saca matrices para comparar (sin pesos, SIFT2 y COMMIT × longitud) y las exporta a Excel:
+```bash
+tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_sift2.csv \
+  -tck_weights_in out/pesos_sift2.txt -symmetric -zero_diagonal
+```
+Calcula la matriz ponderada por SIFT2. → `out/connectome_sift2.csv`
+
+```bash
+paste -d' ' out/commit/pesos_commit.txt out/longitudes.txt | awk '{print $1*$2}' > out/pesos_commit_x_long.txt
+tck2connectome out/tracks_100k.tck data/Parcels_free.nii out/connectome_commit_x_long.csv \
+  -tck_weights_in out/pesos_commit_x_long.txt -symmetric -zero_diagonal
+```
+Multiplica cada peso COMMIT por la longitud de su hilo y calcula la matriz con eso. → `out/connectome_commit_x_long.csv`
+
 ```bash
 python scripts/exportar_matriz84.py out/connectome_commit.csv out/gt.csv out/matriz_peso_commit_84x84_corregida.xlsx
 ```
-Comprueba que la matriz es 84 × 84, simétrica y con diagonal 0, imprime cuánto se parece al GT y guarda el `.xlsx` (filas y columnas R1–R84).
+Comprueba que la matriz es 84 × 84, simétrica y con diagonal en cero, imprime su parecido con el GT y la guarda en Excel (R1–R84). El script repite lo mismo para `sin_pesos`, `sift2` y `commit_x_long`. → `out/matriz_*.xlsx`
 
-Por último evalúa los pesos de COMMIT contra el GT, hilo por hilo:
 ```bash
 python scripts/evaluar_pesos.py COMMIT out/commit/pesos_commit.txt
 ```
+Etiqueta cada hilo contra el GT y mide qué tan bien lo separa COMMIT. → `out/hilos_commit.csv`, `out/evaluacion_commit.txt`
 
-### Resultados esperados (con el `tracks_100k.tck` del otro equipo)
+El aviso `nodes are missing from the parcellation image: 15` es esperable: la región 15 no existe en `Parcels_free.nii`, así que su fila y su columna quedan en cero.
 
-| Matriz | Conexiones > 0 | GT recuperadas (de 529) | Peso en conexiones del GT |
-|---|---|---|---|
-| sin pesos | 1322 | 460 | 81 % |
-| SIFT2 | 1322 | 460 | 75 % |
-| **COMMIT** (entregada) | **1203** | **446** | **64 %** |
-| COMMIT × longitud | 1203 | 446 | 79 % |
+---
 
-- COMMIT da un peso por unidad de longitud, así que la matriz "a secas" favorece las conexiones cortas. Multiplicar por la longitud sube el peso en conexiones reales de 64 % a 79 %.
-- Con un `.tck` propio estos números cambian un poco.
+## Números de control
+
+| Qué | Valor esperado |
+|---|---|
+| `tckstats out/tracks_100k.tck` | mean 92.13, median 95.21, count 100000 |
+| COMMIT: log | `100000 streamlines kept` |
+| COMMIT: NRMSE | 0.106 ± 0.039 |
+| COMMIT: pesos = 0 | 44 780 (45 %) |
+| `out/gt.csv` | 529 conexiones |
+
+| Matriz | Conexiones > 0 | Del GT recuperadas (de 529) | Peso en conexiones del GT | AUC por conexión |
+|---|---|---|---|---|
+| sin_pesos | 1322 | 460 | 81 % | — |
+| sift2 | 1322 | 460 | 75 % | — |
+| **commit** | **1203** | **446** | **64 %** | **0.829** |
+| commit_x_long | 1203 | 446 | 79 % | 0.846 |
+
+Por hilo, con la etiqueta por extremos de `evaluar_pesos.py`, COMMIT da AUC 0.458, igual que el azar.
+
+Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % de conexiones reales en la matriz.
 
 ---
 
 ## Pendiente
 
-- **LiFE** (DIPY): no se ha corrido.
-- **Etiqueta por hilo contra el GT.** `evaluar_pesos.py` usa una aproximación por extremos y es débil (AUC 0.46 por hilo, 0.83 por conexión). Hace falta una etiqueta por haz, la misma para los tres métodos.
-- **Regla de decisión** que combine COMMIT, SIFT2 y LiFE: sin empezar.
-- **Decidir:** COMMIT a secas o × longitud, y `d_isos=[1.7e-3, 3.0e-3]` (versión anterior: `[2.0e-3]`).
+- **LiFE** (DIPY): sin correr.
+- **Etiqueta por haz contra el GT,** común a los tres métodos. La de extremos es débil: el 21 % de los hilos del propio GT no termina en ninguna región.
+- **Regla de decisión** que combine COMMIT, SIFT2 y LiFE.
+- **COMMIT a secas o × longitud:** por decidir.
+- **`d_isos`:** `[1.7e-3, 3.0e-3]` (versión anterior: `[2.0e-3]`).
 - Hipótesis sin comprobar: peso 0 en COMMIT significaría "redundante", no "falso".
 
 ## Bitácora
@@ -188,4 +181,6 @@ python scripts/evaluar_pesos.py COMMIT out/commit/pesos_commit.txt
 | Fecha | Qué |
 |---|---|
 | 2026-11-06 | Datos de los zips organizados en `data/`. |
-| 2026-11-10 | Scripts 01–04 y evaluación tomados del otro equipo (corrección del eje y incluida). Sin correr todavía en este repo. |
+| 2026-11-10 | Scripts 01–04 y evaluación tomados del otro equipo (corrección del eje y incluida). |
+| 2026-11-10 | Pasos 1–4 corridos en macOS con el `tracks_100k.tck` compartido: COMMIT en 1 min 15 s, 44 780 pesos en 0, AUC 0.829 por conexión. Coincide con los números de control. |
+| 2026-11-13 | Fusión con el repo `MaximilianoVM/diffw-MRI`: conda (`environment.yml`) y venv (`requirements.txt`) documentados como alternativas. |

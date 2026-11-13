@@ -7,6 +7,11 @@ out/
 # Intercambio con el otro equipo (copias de sus archivos, no son nuestros)
 equipo_chat/
 
+# Material local: guías, versiones anteriores, exploración, papers
+extras/
+*.pdf
+.Rhistory
+
 # Formatos de neuroimagen y tractogramas (por si quedan fuera de data/ y out/)
 *.nii
 *.nii.gz

@@ -1,9 +1,9 @@
 """Evalúa un método de filtrado (COMMIT, SIFT2 o LiFE) contra el ground truth, hilo por hilo y por conexión.
 
-Uso (desde la raíz del proyecto):
+Uso (desde la raíz del proyecto, con el entorno activado):
     python scripts/evaluar_pesos.py COMMIT out/commit/pesos_commit.txt
 
-Necesita en out/ (ver pipeline_commit_matriz84_corregido.md):
+Necesita en out/ (ver pipeline.md):
     asignaciones.txt  par de regiones de cada hilo (tck2connectome -out_assignments)
     longitudes.txt    longitud de cada hilo en mm (tckstats -dump)
     gt.csv            conectoma 84 x 84 del ground truth
