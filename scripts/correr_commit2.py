@@ -21,9 +21,12 @@ import sys
 import numpy as np
 
 lam = 1e-2
+salida = "out/commit2"
 for a in sys.argv[1:]:
     if a.startswith("--lambda="):
         lam = float(a.split("=", 1)[1])
+    if a.startswith("--salida="):          # p. ej. --salida=out/commit2_lam5e-3 para no pisar la corrida principal
+        salida = a.split("=", 1)[1]
 
 # COMMIT (código en C) falla con rutas con acentos o espacios; misma solución que correr_commit.py.
 REAL = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -38,7 +41,7 @@ else:
 os.chdir(PROY)
 
 TCK, P = "data/tracks_100k.tck", "data/Parcels_free.nii"
-C1, C2 = "out/commit", "out/commit2"
+C1, C2 = "out/commit", salida
 for f in (f"{C1}/dwi.nii.gz", f"{C1}/dwi.scheme", f"{C1}/mask.nii.gz", f"{C1}/COMMIT"):
     if not os.path.exists(f):
         sys.exit(f"ERROR: falta {f}. Corran antes el paso 3: bash scripts/03_commit.sh")
@@ -82,7 +85,12 @@ mit.load_dictionary()
 mit.set_threads()
 mit.build_operator()
 
-# 3) Penalización por grupos (pesos de grupo como en el artículo: cardinalidad + adaptativo)
+# 3) Ajuste sin regularizar (= COMMIT): los pesos de grupo "adaptativos" se calculan a partir de él.
+#    Sin este paso COMMIT da: "Group weights cannot be computed if the fit without regularisation
+#    has not been performed before".
+mit.fit(tol_fun=1e-3, max_iter=1000)
+
+# 4) Penalización por grupos (pesos de grupo como en el artículo: cardinalidad + adaptativo)
 mit.set_regularisation(
     regularisers=("group_lasso", None, None),
     lambdas=(lam, None, None),
@@ -91,13 +99,19 @@ mit.set_regularisation(
              "group_weights_adaptive": True}, None, None),
 )
 mit.fit(tol_fun=1e-3, max_iter=1000)
-mit.save_results()
+# COMMIT guarda los resultados junto al diccionario (out/commit/COMMIT/): con un sufijo propio no pisa
+# los de COMMIT, y luego se mueven a out/commit2/.
+mit.save_results(path_suffix="_COMMIT2")
+import shutil
 
-# 4) Un peso por hilo, en el mismo orden que el .tck
-import glob
+origen = f"{C1}/COMMIT/Results_StickZeppelinBall_COMMIT2"
+destino = f"{C2}/Results_StickZeppelinBall"
+if os.path.exists(destino):
+    shutil.rmtree(destino)
+shutil.move(origen, destino)
 
-archivo = max(glob.glob(f"{C2}/**/streamline_weights.txt", recursive=True), key=os.path.getmtime)
-w = np.loadtxt(archivo)
+# 5) Un peso por hilo, en el mismo orden que el .tck
+w = np.loadtxt(f"{destino}/streamline_weights.txt")
 assert len(w) == n, (len(w), n)
 np.savetxt(f"{C2}/pesos_commit2.txt", w)
 print(f"\nlambda {lam} | hilos {len(w)} | pesos > 0: {(w > 0).sum()} | = 0: {(w == 0).sum()} ({(w == 0).mean():.0%})")

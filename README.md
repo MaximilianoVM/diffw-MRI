@@ -15,6 +15,9 @@ guia_equipo.md    reglas para todos los equipos y sus Claudes (contrato de pesos
 explicacion_commit.md  qué hace COMMIT y cómo se lee la matriz
 aclaraciones_equipo.md  qué hay que aclarar entre equipos
 consideraciones_normalizacion_ricardo.md  ajustes a la idea de normalización por percentil
+normalizacion_resultados.md  normalización Ricardo con COMMIT + SIFT2 (bash scripts/07_normalizacion.sh)
+commit2_resultados.md  COMMIT2: arreglos al script, barrido de λ y comparación (bash scripts/barrido_lambda_commit2.sh)
+normalizacion_por_longitud.md  percentil por rango de longitud (--por-longitud 10): explicación y resultados
 scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh  06_commit2.sh
                   correr_commit2.py
                   correr_commit.py  correr_life.py  exportar_matriz84.py  evaluar_pesos.py
