@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Paso 6: matriz 84 x 84 y evaluación de COMMIT2 (variante de COMMIT, lambda = 1e-2).
 # Uso (desde la raíz del proyecto, después de 02 y 04):  bash scripts/06_commit2.sh
-# Entrada: out/commit2/pesos_commit2.txt = los 100 000 pesos (uno por hilo, orden de data/tracks_100k.tck).
-#          Es el archivo commit2_lam1e-2_weights.txt de quien corrió COMMIT2 (no el .tck filtrado).
+# Si no existe out/commit2/pesos_commit2.txt, lo calcula con scripts/correr_commit2.py (necesita el paso 3 hecho
+# y la máquina grande). Si ya hay pesos (por ejemplo commit2_lam1e-2_weights.txt de otra corrida), los usa tal cual.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY=${PY:-python}
@@ -12,7 +12,8 @@ P=data/Parcels_free.nii
 W=out/commit2/pesos_commit2.txt
 opc="-symmetric -zero_diagonal -force"
 
-[ -s "$W" ] || { echo "ERROR: falta $W (copien ahí commit2_lam1e-2_weights.txt)"; exit 1; }
+# out/commit/ + data/tracks_100k.tck -> out/commit2/pesos_commit2.txt
+[ -s "$W" ] || $PY scripts/correr_commit2.py 2>&1 | tee out/commit2_log.txt
 echo "md5 del tractograma (debe ser 66ba3e6efe1fadf5b534d3947b2b138f): $(md5sum $T | cut -d' ' -f1)"
 $PY - <<'PY'
 import numpy as np

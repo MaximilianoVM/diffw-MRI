@@ -16,6 +16,7 @@ explicacion_commit.md  qué hace COMMIT y cómo se lee la matriz
 aclaraciones_equipo.md  qué hay que aclarar entre equipos
 consideraciones_normalizacion_ricardo.md  ajustes a la idea de normalización por percentil
 scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh  06_commit2.sh
+                  correr_commit2.py
                   correr_commit.py  correr_life.py  exportar_matriz84.py  evaluar_pesos.py
                   comparar_matrices.py  comparar_pesos.py
 team_commit/      pipeline anterior del otro equipo (referencia)
