@@ -1,0 +1,7 @@
+metric,value
+n_streamlines,100000
+n_beta_gt_0,74612
+n_beta_eq_0,25388
+pct_kept,74.61
+beta_mean_positive,0.001785189863
+rmse_mean,nan
