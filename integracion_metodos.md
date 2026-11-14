@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | COMMIT | nosotros | `out/commit/pesos_commit.txt` | `out/matriz_peso_commit_84x84_corregida.xlsx` | ✅ |
 | SIFT2 | equipo SIFT2 / nosotros | `out/pesos_sift2.txt` | `out/matriz_sift2.xlsx` (la del equipo, con la diagonal corregida: `out/equipos/matriz_sift2_equipo_84x84_diag0.xlsx`) | ✅ |
-| LiFE | equipo LiFE | falta `out/life/pesos_life.txt` | se genera con `bash scripts/05_life.sh` | ⏳ se les pidió correrlo con nuestro `tracks_100k.tck` |
+| LiFE | equipo LiFE | `out/life/pesos_life.txt` (su `life_weights.txt`, 14 nov) | `out/matriz_peso_life_84x84.xlsx` | ✅ |
 
 ## Qué hace comparables las matrices
 
@@ -71,7 +71,22 @@ bash scripts/05_life.sh                                              # salta el 
 
 Eso genera `out/matriz_peso_life_84x84.xlsx`, `out/evaluacion_life.txt`, `out/comparacion_matrices.csv` y `out/comparacion_pesos.txt`.
 
-## Resultados de la comparación (sin LiFE todavía)
+**Actualización (13 nov, noche): llegó LiFE sobre `tracks_100k.tck`** (`conn_life_full.csv`, `conn_raw_full.csv`; copias en `out/equipos/life_100k/`).
+
+- `conn_raw_full.csv` es idéntico a nuestro conteo sin pesos fuera de la diagonal (68 418 hilos, 1322 conexiones): **usaron nuestro tractograma**.
+- Siguen sin `-zero_diagonal`: 4869 hilos en la diagonal del conteo y 1.3 % del peso LiFE. Se puso en 0 → `*_diag0.csv`.
+- Mandaron solo las matrices, no `life_weights.txt` (100 000 pesos por hilo). Con la matriz basta para comparar conexiones; **para la normalización y la comparación hilo por hilo hacen falta los pesos por hilo**.
+
+**Actualización (14 nov): llegaron los pesos por hilo** (`life_weights.txt`, `life_weights.csv`, `life_summary.csv`; en `out/equipos/life_100k/`, copia en `out/life/pesos_life.txt`).
+
+- Cumplen el contrato de `guia_equipo.md`: 100 000 pesos ≥ 0, sin NaN; 74 612 > 0 (25.4 % en 0).
+- Están en el orden de `data/tracks_100k.tck`: la columna `length_mm` coincide con `out/longitudes.txt` (diferencia máxima 0.001 mm).
+- Nuestra matriz con sus pesos (`tck2connectome -tck_weights_in`) da exactamente lo mismo que la suya: 1168 conexiones, 90.7 % de peso en el GT, Pearson 0.923.
+- Contra la prueba local con 20 000 hilos: Spearman 0.96 en esos hilos.
+- Hilo por hilo (etiqueta por extremos): AUC 0.707, el único método por encima de la longitud sola (0.635). Los que pone en 0 son malos en un 67 % (al azar 45 %). Con la etiqueta MDF del paso 7: AUC 0.655 (COMMIT2 0.684, COMMIT 0.420, SIFT2 0.345).
+- Hilo por hilo casi no se parece a COMMIT ni a SIFT2 (Spearman −0.02 y −0.10), pero sí a COMMIT2 (+0.33). Por conexión coincide con todos (0.89–0.93).
+
+## Resultados de la comparación
 
 ### Matrices contra el GT (`scripts/comparar_matrices.py`)
 
@@ -84,10 +99,11 @@ GT: 529 conexiones reales de 3486 pares posibles.
 | COMMIT | 1203 | 446 | 63.8 | 0.829 | 0.731 |
 | COMMIT × longitud | 1203 | 446 | 79.0 | 0.846 | 0.881 |
 | equipo SIFT2 (diagonal en 0) | 1322 | 460 | 74.7 | 0.850 | 0.793 |
+| COMMIT2 (λ = 1e-2) | 86 | 70 | 91.9 | 0.564 | 0.788 |
 | equipo LiFE (su tractograma) | 595 | 120 | 34.7 | 0.535 | 0.051 |
-| LiFE sobre `tracks_100k.tck` | pendiente | | | | |
+| **equipo LiFE sobre `tracks_100k.tck` (diagonal en 0)** | 1168 | 442 | **90.7** | 0.851 | **0.923** |
 
-Ningún método supera al conteo sin pesos en Pearson con el GT. COMMIT × longitud es el que más se acerca.
+**LiFE es el único método que supera al conteo sin pesos** en % de peso en el GT (90.7 contra 80.5) y en Pearson (0.923 contra 0.894), y casi lo iguala en AUC (0.851 contra 0.857). Descarta 154 de las 1322 conexiones (las pone en 0) y solo pierde 18 reales. COMMIT2 tiene más % de peso en el GT, pero se queda con solo 86 conexiones.
 
 ### Pesos entre sí, hilo por hilo (`scripts/comparar_pesos.py`)
 
@@ -100,7 +116,7 @@ Ningún método supera al conteo sin pesos en Pearson con el GT. COMMIT × longi
 
 ## Pendiente
 
-1. **Pesos de LiFE** del equipo sobre `tracks_100k.tck` → `bash scripts/05_life.sh`.
+1. ~~Matriz y pesos por hilo de LiFE sobre `tracks_100k.tck`~~ (llegaron; 05 y 07 corridos el 14 nov). Que la próxima vez usen `-zero_diagonal`.
 2. Avisar al equipo SIFT2: falta `-zero_diagonal`, la FOD va sin invertir *y* (efecto pequeño) y el `.txt` dice `all_tracks.tck`.
 3. **Etiqueta por haz contra el GT**, para evaluar hilo por hilo: la de extremos da AUC ≈ 0.43–0.46 en todos los métodos. La distancia MDF que usó DWaveOne sirve para esto (`docs/dwaveone_metodologia.md`). Corresponde al paso 2 de la diap. 22 ("seleccionar los streamlines que más se parezcan al GT").
 4. Regla de decisión que combine los tres pesos (paso 4).

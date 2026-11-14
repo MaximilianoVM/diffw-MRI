@@ -121,7 +121,79 @@ Con el percentil por longitud, **el ganador deja de ser el umbral que menos filt
 | ¿Algún combinado mejora a "sin filtrar" en % de falsas? | no | sí (41–44 % contra 45.2 %) |
 | Frente a cada método solo | entre COMMIT y SIFT2 | mejor que COMMIT y que SIFT2; más equilibrado que COMMIT2 |
 
-**Recomendación:** usar el percentil por rango de longitud (`--por-longitud 10`) con COMMIT, SIFT2 y COMMIT2 (λ = 1e-2), y umbral 0.3. Cuando llegue LiFE, agregarlo con el mismo esquema.
+**Recomendación:** usar el percentil por rango de longitud (`--por-longitud 10`) con COMMIT, SIFT2, COMMIT2 (λ = 1e-2) y LiFE, y umbral 0.3 (ver 5.1). **Actualizada en 5.2:** mejor COMMIT2 + LiFE con percentil global, u = 0.1.
+
+### 5.1 Con LiFE (14 nov)
+
+Mismo esquema (`bash scripts/07_normalizacion.sh`, que agrega LiFE solo si existe `out/life/pesos_life.txt`). Resultados en `out/normalizacion/umbrales_longitud/`.
+
+| Por longitud | u = 0.1 | 0.2 | 0.3 | 0.4 | 0.5 |
+|---|---|---|---|---|---|
+| % falsas sin LiFE | 44.6 | 44.4 | 43.8 | 42.4 | 41.0 |
+| **% falsas con LiFE** | 44.3 | 43.3 | **41.7** | 39.9 | 36.7 |
+
+| Por longitud, u = 0.3 | Hilos | Haces | % falsas ↓ | Cobertura ↑ | Desborde ↓ | Dice ↑ | MDF (mm) ↓ |
+|---|---|---|---|---|---|---|---|
+| COMMIT + SIFT2 + COMMIT2 | 48 874 | 20 | 43.8 | 0.748 | 0.219 | 0.741 | 2.45 |
+| **+ LiFE** | **53 890** | 20 | **41.7** | 0.747 | 0.222 | 0.739 | **2.43** |
+| LiFE solo (peso > 0) | 74 612 | 21 | 40.1 | 0.765 | 0.274 | 0.738 | 2.55 |
+| sin filtrar | 100 000 | 21 | 45.2 | 0.818 | 0.332 | 0.750 | 2.47 |
+
+- Con LiFE, u = 0.3 sigue ganando y mejora en todo lo importante: **conserva 5 000 hilos más y aun así baja las falsas** (43.8 → 41.7 %), con la misma cobertura y Dice.
+- El AUC del score combinado sube de 0.53 a 0.556.
+- LiFE solo ya está en 40.1 % de falsas con 21 haces: es el mejor método individual que no pierde haces.
+
+### 5.2 Comparación con el mismo número de hilos, en las dos normalizaciones (14 nov)
+
+Cada fila compara el combinado con cada método solo, quedándose con los mismos n hilos de mayor peso. Archivos: `comparacion_mismo_n.csv` en `out/normalizacion/{umbrales, umbrales_longitud, c2l_global, c2l_longitud}/`.
+
+**AUC por hilo (etiqueta MDF):** COMMIT 0.420 · SIFT2 0.345 · COMMIT2 0.684 · LiFE 0.655 · longitud sola 0.747.
+COMMIT y SIFT2 están **por debajo del azar** hilo por hilo: sus pesos altos caen más en hilos falsos. Al promediarlos con COMMIT2 y LiFE, ensucian el score.
+
+#### a) COMMIT + SIFT2 + COMMIT2 + LiFE
+
+% falsas / cobertura / Dice (haces, si son menos de 21):
+
+| Norm. | u (n) | Combinado | COMMIT solo | SIFT2 solo | COMMIT2 solo | LiFE solo |
+|---|---|---|---|---|---|---|
+| global | 0.1 (89 580) | 45.2 / 0.807 / 0.751 | 45.7 / 0.809 / 0.747 | 46.3 / 0.809 / 0.749 | 43.6 / 0.813 / 0.751 | 43.6 / 0.811 / 0.752 |
+| global | 0.3 (54 946) | 43.2 / 0.740 / 0.735 (20) | 48.8 / 0.775 / 0.751 | 55.0 / 0.737 / 0.730 | **33.6** / 0.767 / 0.748 | **33.6** / 0.705 / 0.718 |
+| global | 0.5 (17 936) | 34.4 / 0.550 / 0.638 (20) | 65.1 / 0.618 / 0.700 (20) | 72.1 / 0.491 / 0.593 (20) | **18.5** / 0.413 / 0.477 (16) | 27.0 / 0.355 / 0.431 (18) |
+| longitud | 0.1 (88 610) | 44.3 / 0.808 / 0.751 | 45.8 / 0.809 / 0.747 | 46.4 / 0.808 / 0.748 | 43.4 / 0.812 / 0.751 | 43.4 / 0.810 / 0.752 |
+| longitud | 0.3 (53 890) | 41.7 / 0.747 / 0.739 (20) | 49.0 / 0.772 / 0.749 | 55.4 / 0.735 / 0.730 | **33.1** / 0.766 / 0.748 | 33.4 / 0.696 / 0.710 (20) |
+| longitud | 0.5 (19 489) | 36.7 / 0.569 / 0.651 (20) | 63.5 / 0.636 / 0.709 (20) | 70.8 / 0.517 / 0.613 (20) | **18.2** / 0.433 / 0.492 (16) | 27.3 / 0.375 / 0.450 (19) |
+
+- En las dos normalizaciones, el combinado de cuatro **le gana a COMMIT y a SIFT2, pero pierde contra COMMIT2 solo y LiFE solo** en % de falsas con cualquier n. En u = 0.3, COMMIT2 solo es mejor en todo: 33 % de falsas contra 42–43 %, con igual o mejor cobertura y Dice.
+- La normalización por longitud mejora un poco al combinado de cuatro (41.7 contra 43.2 % en u = 0.3), pero no cambia la conclusión.
+
+#### b) Solo COMMIT2 + LiFE (los dos con AUC > 0.5)
+
+| Norm. | AUC score | Ganador | Hilos | Haces | % falsas | Cobertura | Dice | MDF (mm) |
+|---|---|---|---|---|---|---|---|---|
+| **global** | **0.713** | u = 0.1 | 66 287 | 21 | **33.8** | 0.756 | 0.736 | 2.59 |
+| longitud | 0.652 | u = 0.1 | 68 507 | 21 | 38.0 | 0.743 | 0.729 | 2.62 |
+
+Con el mismo n (global), % falsas / cobertura / Dice (haces):
+
+| u (n) | COMMIT2 + LiFE | COMMIT2 solo | LiFE solo |
+|---|---|---|---|
+| 0.1 (66 287) | **33.8** / 0.756 / 0.736 (21) | 38.1 / **0.787** / **0.747** (21) | 37.0 / 0.748 / 0.733 (21) |
+| 0.2 (54 352) | **29.9** / 0.689 / 0.702 (20) | 33.4 / **0.765** / **0.744** (21) | 33.5 / 0.702 / 0.717 (21) |
+| 0.3 (42 402) | 26.5 / 0.591 / 0.624 (19) | **26.1** / **0.707** / **0.718** (20) | 31.1 / 0.624 / 0.672 (20) |
+
+- **Es la primera combinación cuyo score supera a cada método solo** (AUC 0.713 contra 0.684 y 0.655).
+- En u = 0.1 y 0.2 tiene **menos falsas que cualquiera de los dos solos** con el mismo n, a cambio de un poco menos de cobertura que COMMIT2. Desde u = 0.3, COMMIT2 solo ya es mejor.
+- Aquí **la normalización por longitud empeora** (AUC 0.65 contra 0.71). COMMIT2 y LiFE favorecen los hilos largos (Spearman con la longitud +0.27 y +0.26), y la longitud sí predice si un hilo pertenece a un haz (AUC 0.747). Normalizar por longitud les quita esa señal. Antes ayudaba porque corregía el sesgo contrario de COMMIT y SIFT2 hacia los hilos cortos.
+- Ojo con COMMIT2 solo: tiene 36 928 hilos con peso > 0; para n mayores se completa con hilos de peso 0 al azar.
+
+#### Conclusión de 5.2
+
+| Combinación | Mejor normalización | ¿Le gana a cada método solo con el mismo n? |
+|---|---|---|
+| COMMIT + SIFT2 + COMMIT2 + LiFE | por longitud (u = 0.3) | solo a COMMIT y SIFT2 |
+| **COMMIT2 + LiFE** | **global (u = 0.1–0.2)** | **sí en % falsas**; COMMIT2 conserva un poco más de cobertura |
+
+**Nueva recomendación:** COMMIT2 + LiFE con percentil global y u = 0.1. Conserva 66 287 hilos y los 21 haces, con 33.8 % de falsas (sin filtrar: 45.2 %) y Dice 0.736. Con u = 0.2 baja a 29.9 % de falsas, pero pierde un haz. COMMIT y SIFT2 sirven por conexión (matriz), no para elegir hilos.
 
 ## 6. Cuidados
 

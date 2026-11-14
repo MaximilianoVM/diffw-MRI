@@ -29,6 +29,7 @@ matrices = {
     "COMMIT x longitud": "out/connectome_commit_x_long.csv",
     "LiFE x longitud": "out/connectome_life_x_long.csv",
     "equipo SIFT2 (diagonal en 0)": "out/equipos/Connectome_SIFT2_100k_diag0.csv",
+    "equipo LiFE (tracks_100k, diagonal en 0)": "out/equipos/life_100k/conn_life_full_diag0.csv",
     "equipo LiFE (su tractograma)": "docs/conn_life_full.csv",
 }
 
