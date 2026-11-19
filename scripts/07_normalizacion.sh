@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 PY=${PY:-python}
 [ -x .venv/bin/python ] && PY=.venv/bin/python
 
-# test obligatorio del ejemplo de docs/Normalizacion Ricardo.md (sección 4)
+# test obligatorio del ejemplo de docs/equipos/Normalizacion Ricardo.md (sección 4)
 $PY scripts/test_normalizacion.py
 
 pesos="COMMIT=out/commit/pesos_commit.txt SIFT2=out/pesos_sift2.txt"

@@ -116,6 +116,8 @@ Multiplicar el peso por la longitud del hilo corrige eso (variante "COMMIT × lo
 3. En la celda `(12, 40)` suma el peso del hilo. Con `-tck_weights_in` suma el peso de COMMIT; sin él, suma 1 por hilo (cuenta de hilos).
 4. `-symmetric` repite el valor en `(40, 12)` y `-zero_diagonal` pone 0 donde una región se conecta consigo misma.
 
+**La diagonal.** La celda `(i, i)` cuenta los hilos cuyos dos extremos caen en la misma región; no es una conexión entre regiones y no cambia las demás celdas. Las matrices que se entregaron sin `-zero_diagonal` (SIFT2 y LiFE de los equipos) la traen con valores. No hay que repetir nada: **al comparar se pone la diagonal en 0** (`np.fill_diagonal(M, 0)`), y solo importa si se suman totales o se normaliza por el máximo (el máximo cae en la diagonal).
+
 Los hilos cuyos extremos no caen en ninguna región se descartan en este paso. La región 15 no existe en la parcelación, y por eso su fila y columna quedan en 0.
 
 ### Cómo leer la matriz

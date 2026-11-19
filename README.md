@@ -1,29 +1,30 @@
 # Proyecto Cerebro: ¿cómo saber si un streamline es bueno?
 
-Desafío DW-MRI (Laboratorio de Resolución de Problemas I, CIMAT). Sobre el fantoma ISMRM 2015 se genera un tractograma y se pesa cada hilo con COMMIT, SIFT2 y LiFE para decidir cuáles conservar. Esta parte produce la matriz de conectividad 84 × 84 ponderada por COMMIT.
+Desafío DW-MRI (Laboratorio de Resolución de Problemas I, CIMAT). Sobre el fantoma ISMRM 2015 se genera un tractograma de 100 000 hilos (`data/tracks_100k.tck`) y se pesa cada hilo con **SIFT2, LiFE y COMMIT**. Objetivo (junta del 17 nov, `docs/junta_17nov.md`): normalizar esos tres vectores de pesos, filtrar los hilos, y ver si un modelo entrenado con la etiqueta del ground truth filtra mejor que cada método por separado.
+
+**¿Vienes a integrarte (persona o Claude)? Lee primero `ACTUALIZACION.md`.**
 
 ```
-README.md         este archivo
-estado.md         qué está hecho y qué falta
-pipeline.md       los pasos, comando por comando
-environment.yml   entorno conda (WSL/Linux): MRtrix + COMMIT
-requirements.txt  versiones exactas de Python (venv, macOS)
-data/             entrada y tracks_100k.tck (no se sube; ver data/README.md)
-out/              todo lo generado, plano (COMMIT en out/commit/); no se sube
-integracion_metodos.md  COMMIT, SIFT2 y LiFE sobre el mismo tractograma: diferencias con los equipos y comparación
-guia_equipo.md    reglas para todos los equipos y sus Claudes (contrato de pesos)
-explicacion_commit.md  qué hace COMMIT y cómo se lee la matriz
-aclaraciones_equipo.md  qué hay que aclarar entre equipos
-consideraciones_normalizacion_ricardo.md  ajustes a la idea de normalización por percentil
-normalizacion_resultados.md  normalización Ricardo con COMMIT + SIFT2 (bash scripts/07_normalizacion.sh)
-commit2_resultados.md  COMMIT2: arreglos al script, barrido de λ y comparación (bash scripts/barrido_lambda_commit2.sh)
-normalizacion_por_longitud.md  percentil por rango de longitud (--por-longitud 10): explicación y resultados
-scripts/          01_preprocess.sh  02_tractography.sh  03_commit.sh  04_matrices.sh  05_life.sh  06_commit2.sh
-                  correr_commit2.py
-                  correr_commit.py  correr_life.py  exportar_matriz84.py  evaluar_pesos.py
-                  comparar_matrices.py  comparar_pesos.py
-team_commit/      pipeline anterior del otro equipo (referencia)
-extras/           guías, versiones anteriores y exploración (local, no se sube)
+README.md           este archivo
+ACTUALIZACION.md    estado, cambios y siguientes pasos (el único seguimiento en la raíz)
+pipeline.md         los pasos, comando por comando
+environment.yml     entorno conda (WSL/Linux): MRtrix + COMMIT
+requirements.txt    versiones exactas de Python (venv, macOS)
+data/               entrada y tracks_100k.tck (no se sube; ver data/README.md)
+out/                todo lo generado (COMMIT en out/commit/); no se sube
+scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff
+                    + los .py de apoyo (correr_*, comparar_*, evaluar_pesos, normalizacion_ricardo...)
+docs/
+  junta_17nov.md        objetivo según el investigador
+  diagramas.md          flujo de datos y fases del proyecto
+  conclusiones.md       qué sabemos hasta ahora
+  explicacion_commit.md qué hace COMMIT y cómo se lee la matriz 84 x 84
+  guia_equipo.md        reglas de trabajo y contrato de pesos
+  metodologia_comparacion.md  cómo se calculan las métricas
+  hausdorff_instrucciones.md  reparto del cálculo de la etiqueta entre computadoras
+  etiqueta_hausdorff_vs_mdf.md  por qué Hausdorff y por qué mostrar también MDF
+  resultados/           extras.md (resumen), matrices.md, commit2.md, normalizacion.md
+  equipos/              lo que mandaron SIFT2, LiFE, COMMIT2 y el pipeline anterior
 ```
 
 Entorno, una de dos:

@@ -1,4 +1,4 @@
-"""Test obligatorio de la normalización (docs/Normalizacion Ricardo.md, sección 4).
+"""Test obligatorio de la normalización (docs/equipos/Normalizacion Ricardo.md, sección 4).
 
 Uso (desde la raíz del proyecto):  python scripts/test_normalizacion.py
 """

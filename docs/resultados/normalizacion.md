@@ -127,7 +127,7 @@ Comparar con "cada método con peso > 0" es injusto: SIFT2 nunca da 0, así que 
 
 ---
 
-Implementación de `docs/Normalizacion Ricardo.md` con los dos métodos que ya pesan el tractograma oficial. **LiFE queda pendiente**: entra solo cuando exista `out/life/pesos_life.txt`.
+Implementación de `docs/equipos/Normalizacion Ricardo.md` con los dos métodos que ya pesan el tractograma oficial. **LiFE queda pendiente**: entra solo cuando exista `out/life/pesos_life.txt`.
 
 ```bash
 bash scripts/07_normalizacion.sh      # test + normalización + evaluación (≈ 4 min la primera vez, 30 s después)
@@ -189,7 +189,7 @@ AUC < 0.5 significa que el peso ordena al revés. COMMIT pone en 0 al 48.3 % de 
 
 ### Qué falta decidir (antes de LiFE)
 
-1. **Qué significa "eliminado" en SIFT2.** Opción (b) de `consideraciones_normalizacion_ricardo.md`: tratar como eliminado el 45 % de menor peso, el mismo % que COMMIT pone en 0. Sin eso, SIFT2 nunca filtra.
+1. **Qué significa "eliminado" en SIFT2.** Opción (b) de `docs/resultados/normalizacion.md`: tratar como eliminado el 45 % de menor peso, el mismo % que COMMIT pone en 0. Sin eso, SIFT2 nunca filtra.
 2. **Corregir la longitud:** usar COMMIT × longitud (y SIFT2 × longitud) antes de normalizar. Es lo que más sube el AUC (0.47 y 0.65).
 3. **Etiqueta MDF más justa con hilos cortos:** por ejemplo, la distancia de cada punto del hilo al haz (el hilo "está dentro" del haz) en lugar de la MDF punta a punta; o excluir los hilos cortos de la evaluación.
 4. **El umbral se elige con el mismo GT con que se evalúa:** es optimista. Conviene elegirlo con la mitad de los haces y evaluar con la otra.
@@ -240,7 +240,7 @@ AUC por hilo dentro de cada quintil de longitud (0.5 = no aporta nada):
 #### Lectura
 
 1. **Las dos etiquetas están sesgadas por longitud, en sentidos opuestos.** Con MDF, solo el 3.9 % de los hilos de menos de 56 mm cuenta como verdadero: castiga a los cortos. Con la máscara, el 94 % de todos los hilos cuenta como verdadero: es demasiado permisiva. Por eso multiplicar por la longitud "ayuda" con una etiqueta (AUC del score 0.37 → 0.59) y "perjudica" con la otra (0.62 → 0.47). Ese efecto mide la etiqueta, no a los métodos.
-2. **Una vez fijada la longitud, COMMIT y SIFT2 casi no separan hilos buenos de malos** (AUC 0.45–0.57 en casi todos los rangos). Ninguna forma de combinarlos puede sacar información que los pesos no tienen. Donde sí funcionan es por conexión (AUC 0.83–0.85; ver `integracion_metodos.md`).
+2. **Una vez fijada la longitud, COMMIT y SIFT2 casi no separan hilos buenos de malos** (AUC 0.45–0.57 en casi todos los rangos). Ninguna forma de combinarlos puede sacar información que los pesos no tienen. Donde sí funcionan es por conexión (AUC 0.83–0.85; ver `docs/resultados/matrices.md`).
 3. **El Dice no sirve para elegir el umbral.** Queda entre 0.746 y 0.759 en las 40 combinaciones, y el máximo siempre es "sin filtrar". La ocupación de vóxeles se satura: quitar hilos casi nunca vacía un vóxel del haz. Por eso el umbral elegido siempre cae en el borde bajo.
 4. **`--corte` es necesario por definición, no por resultados.** Sin él, SIFT2 nunca elimina nada, el voto mayoritario es igual a COMMIT y "SIFT2 gana" solo porque no filtra.
 
@@ -261,7 +261,7 @@ AUC por hilo dentro de cada quintil de longitud (0.5 = no aporta nada):
 # B. Percentil por rango de longitud
 
 
-Variante de la normalización Ricardo (`docs/Normalizacion Ricardo.md`). Todo es igual, salvo **contra quién se compara cada hilo** al calcular su percentil.
+Variante de la normalización Ricardo (`docs/equipos/Normalizacion Ricardo.md`). Todo es igual, salvo **contra quién se compara cada hilo** al calcular su percentil.
 
 ### 1. Por qué
 
@@ -469,7 +469,7 @@ Con el mismo n (global), % falsas / cobertura / Dice (haces):
 # C. Consideraciones iniciales
 
 
-Revisión del 2026-11-13 de `docs/Normalizacion Ricardo.md` contra los datos de este repo. **Conclusión: es factible.** Su ejemplo de la sección 4 da exactamente sus valores (0.33, 0.92, 0.25, 0.17, 0.83; se conservan las fibras 2 y 5). Lo que sigue son ajustes para que funcione con nuestros archivos.
+Revisión del 2026-11-13 de `docs/equipos/Normalizacion Ricardo.md` contra los datos de este repo. **Conclusión: es factible.** Su ejemplo de la sección 4 da exactamente sus valores (0.33, 0.92, 0.25, 0.17, 0.83; se conservan las fibras 2 y 5). Lo que sigue son ajustes para que funcione con nuestros archivos.
 
 ### 1. Archivos de entrada (contrato del repo)
 
@@ -489,7 +489,7 @@ Cargar con `np.loadtxt(f, comments="#").ravel()` (SIFT2 trae una cabecera `#`). 
 1. **Un 0 no significa lo mismo en cada método.** COMMIT pone en 0 el 45 % de los hilos; SIFT2 no pone ninguno (0 de 100 000, pesos entre 0.19 y 3.7). Con el promedio de percentiles, SIFT2 nunca "elimina" un hilo y el umbral 0.5 pasa a decidirlo casi COMMIT. Opciones: (a) dejarlo así y decirlo; (b) para SIFT2 y LiFE tratar como "eliminado" el 45 % de menor peso (el mismo % que COMMIT); (c) usar solo el voto mayoritario con ese corte común.
 2. **La longitud sesga los rangos.** Los pesos de COMMIT son por unidad de longitud y favorecen hilos cortos; SIFT2 tiene Spearman −0.41 con la longitud. Probar también COMMIT × longitud (`out/pesos_commit_x_long.txt`, ya lo genera `04_matrices.sh`).
 3. **Elegir el umbral con el mismo GT con que se evalúa es optimista.** Declararlo en el informe, o elegir el umbral con la mitad de los haces y evaluar con la otra.
-4. **Peso 0 = "eliminó"** es una hipótesis, no un hecho comprobado (decisión 3.5 de `aclaraciones_equipo.md`).
+4. **Peso 0 = "eliminó"** es una hipótesis, no un hecho comprobado (decisión 3.5 de `docs/explicacion_commit.md`).
 
 ### 3. Lo que falta o no encaja
 
@@ -500,11 +500,11 @@ Cargar con `np.loadtxt(f, comments="#").ravel()` (SIFT2 trae una cabecera `#`). 
 - La etiqueta por haz (MDF < 5 mm al haz más cercano) es la misma que falta para evaluar hilo por hilo (decisión 3.4). Conviene hacerla una vez y que la usen todos.
 - Las matrices 84 × 84 se comparan con la **diagonal en 0** (`np.fill_diagonal(M, 0)`); no aplica a esta normalización, que es por hilo.
 
-### 4. Sobre `docs/Normalizacion.py`
+### 4. Sobre `docs/equipos/Normalizacion.py`
 
 No se usa para esto: normaliza matrices dividiendo entre el máximo, y en las matrices de LiFE ese máximo está en la diagonal (distorsiona RMSE y Frobenius). Es otro enfoque (matrices, no hilos).
 
 ### 5. Dónde dejar la implementación
 
-Siguiendo `guia_equipo.md`: script en `scripts/` con el siguiente número libre (`07_...`), entrega `out/keep_<estrategia>.txt` (un 0 o 1 por hilo) y su sección en `pipeline.md` con comandos sueltos y "Se espera". Incluir el test del ejemplo (`test_normalizacion.py`).
+Siguiendo `docs/guia_equipo.md`: script en `scripts/` con el siguiente número libre (`07_...`), entrega `out/keep_<estrategia>.txt` (un 0 o 1 por hilo) y su sección en `pipeline.md` con comandos sueltos y "Se espera". Incluir el test del ejemplo (`test_normalizacion.py`).
 

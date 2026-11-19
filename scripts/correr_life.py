@@ -1,6 +1,6 @@
 """Calcula los pesos de LiFE (un beta por hilo) con DIPY para un tractograma .tck.
 
-Sigue el script del equipo de LiFE (docs/life_metodo.md): FiberModel(gtab).fit(data, hilos, inv(affine)).
+Sigue el script del equipo de LiFE (docs/equipos/life_metodo.md): FiberModel(gtab).fit(data, hilos, inv(affine)).
 La única diferencia es la entrada: el tractograma común data/tracks_100k.tck en vez de uno propio.
 
 Uso (desde la raíz del proyecto, con el entorno activado):

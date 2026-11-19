@@ -1,6 +1,6 @@
 # Integración de COMMIT, SIFT2 y LiFE (2026-11-13)
 
-**Objetivo de este paso intermedio:** que los tres métodos den una matriz 84 × 84 **comparable** y que sus pesos se puedan comparar hilo por hilo. Es el paso 3 de la idea del proyecto (`docs/Introduccion-desafio.pptx`, diap. 22): aplicar LiFE, COMMIT y SIFT2 al **mismo** tractograma para obtener un peso por streamline. La regla de decisión (paso 4) va después.
+**Objetivo de este paso intermedio:** que los tres métodos den una matriz 84 × 84 **comparable** y que sus pesos se puedan comparar hilo por hilo. Es el paso 3 de la idea del proyecto (`docs/equipos/Introduccion-desafio.pptx`, diap. 22): aplicar LiFE, COMMIT y SIFT2 al **mismo** tractograma para obtener un peso por streamline. La regla de decisión (paso 4) va después.
 
 ## Estado
 
@@ -24,7 +24,7 @@ Las tres deben cumplir lo mismo, si no la diferencia no es del método:
 
 Material en `docs/`: `Comandos SIFT2.txt`, `life_comandos_matriz.txt`, `life_metodo.md` y sus matrices `.numbers`, convertidas a CSV en `out/equipos/`.
 
-### SIFT2 (`docs/Comandos SIFT2.txt`, `Connectome_SIFT2_100k.numbers`)
+### SIFT2 (`docs/equipos/Comandos SIFT2.txt`, `Connectome_SIFT2_100k.numbers`)
 
 Su matriz **sí sale de nuestro `tracks_100k.tck`**: las mismas 1322 conexiones, y r = 0.99994 con la nuestra. La reproduje con sus comandos exactos (`out/equipos/sift2_repro/`): diferencia máxima de 0.05.
 
@@ -48,7 +48,7 @@ Su matriz **sí sale de nuestro `tracks_100k.tck`**: las mismas 1322 conexiones,
 
 SIFT2 reparte peso sobre un tractograma que ya estaba bien trazado, así que una FOD con *y* invertido apenas lo mueve. No hace falta recalcular nada: la versión con la FOD corregida es la nuestra (`out/pesos_sift2.txt`, 12 s). Para la regla de decisión conviene usar la nuestra, porque ≈ 7 % de los hilos que se descartarían por umbral cambian.
 
-### LiFE (`docs/life_comandos_matriz.txt`, `docs/life_metodo.md`, `conn_life_full.numbers`)
+### LiFE (`docs/equipos/life_comandos_matriz.txt`, `docs/equipos/life_metodo.md`, `conn_life_full.numbers`)
 
 **Su matriz no se puede usar para comparar.**
 
@@ -79,7 +79,7 @@ Eso genera `out/matriz_peso_life_84x84.xlsx`, `out/evaluacion_life.txt`, `out/co
 
 **Actualización (14 nov): llegaron los pesos por hilo** (`life_weights.txt`, `life_weights.csv`, `life_summary.csv`; en `out/equipos/life_100k/`, copia en `out/life/pesos_life.txt`).
 
-- Cumplen el contrato de `guia_equipo.md`: 100 000 pesos ≥ 0, sin NaN; 74 612 > 0 (25.4 % en 0).
+- Cumplen el contrato de `docs/guia_equipo.md`: 100 000 pesos ≥ 0, sin NaN; 74 612 > 0 (25.4 % en 0).
 - Están en el orden de `data/tracks_100k.tck`: la columna `length_mm` coincide con `out/longitudes.txt` (diferencia máxima 0.001 mm).
 - Nuestra matriz con sus pesos (`tck2connectome -tck_weights_in`) da exactamente lo mismo que la suya: 1168 conexiones, 90.7 % de peso en el GT, Pearson 0.923.
 - Contra la prueba local con 20 000 hilos: Spearman 0.96 en esos hilos.
@@ -118,7 +118,7 @@ GT: 529 conexiones reales de 3486 pares posibles.
 
 1. ~~Matriz y pesos por hilo de LiFE sobre `tracks_100k.tck`~~ (llegaron; 05 y 07 corridos el 14 nov). Que la próxima vez usen `-zero_diagonal`.
 2. Avisar al equipo SIFT2: falta `-zero_diagonal`, la FOD va sin invertir *y* (efecto pequeño) y el `.txt` dice `all_tracks.tck`.
-3. **Etiqueta por haz contra el GT**, para evaluar hilo por hilo: la de extremos da AUC ≈ 0.43–0.46 en todos los métodos. La distancia MDF que usó DWaveOne sirve para esto (`docs/dwaveone_metodologia.md`). Corresponde al paso 2 de la diap. 22 ("seleccionar los streamlines que más se parezcan al GT").
+3. **Etiqueta por haz contra el GT**, para evaluar hilo por hilo: la de extremos da AUC ≈ 0.43–0.46 en todos los métodos. La distancia MDF que usó DWaveOne sirve para esto (`docs/equipos/dwaveone_metodologia.md`). Corresponde al paso 2 de la diap. 22 ("seleccionar los streamlines que más se parezcan al GT").
 4. Regla de decisión que combine los tres pesos (paso 4).
 
 ## Archivos nuevos

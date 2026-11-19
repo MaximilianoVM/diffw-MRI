@@ -86,7 +86,7 @@ Con esa etiqueta se calcula el **AUC por hilo**: el peso como puntaje para prede
 
 ### Qué cambiaría con MDF (pendiente)
 
-La distancia MDF (ver `docs/dwaveone_metodologia.md`) compara la **forma** del hilo con los haces del GT, no solo sus extremos:
+La distancia MDF (ver `docs/equipos/dwaveone_metodologia.md`) compara la **forma** del hilo con los haces del GT, no solo sus extremos:
 
 1. Remuestrear cada hilo y cada haz del GT a 20 puntos.
 2. Centroides de cada uno de los 21 haces de `data/GT/` con QuickBundles.

@@ -6,7 +6,7 @@ Objetivo: que SIFT2, COMMIT, LiFE, el etiquetado y la regla de decisión se pued
 
 ## 1. Instrucciones para el Claude de cada integrante (copiar y pegar)
 
-> Lee `guia_equipo.md`, `README.md` y `pipeline.md` del repositorio antes de hacer nada.
+> Lee `docs/guia_equipo.md`, `README.md` y `pipeline.md` del repositorio antes de hacer nada.
 > Reglas: (1) trabaja solo en los archivos de mi parte (sección 6 de la guía); (2) no cambies nombres de archivos de `out/` ni la estructura de carpetas; (3) todo script va en `scripts/`, corre desde la raíz del proyecto con rutas relativas `data/` y `out/`; (4) cada comando que pongas en `pipeline.md` lleva una frase de explicación y el archivo que sale; (5) no borres ni muevas nada que no hayas creado tú, y antes de borrar o sobrescribir cualquier archivo en `out/` o `data/` pregúntame; (6) no instales paquetes fuera del entorno `dwmri` sin avisarme, y si hace falta uno nuevo, agrégalo a `environment.yml` con versión fija; (7) no hagas commit ni push sin que yo lo pida; (8) no ejecutes cosas pesadas (COMMIT, LiFE, tractografía) en mi laptop sin preguntarme; (9) mantén todo simple: menos archivos, menos carpetas, menos texto.
 
 ---
@@ -15,9 +15,9 @@ Objetivo: que SIFT2, COMMIT, LiFE, el etiquetado y la regla de decisión se pued
 
 ```
 README.md          qué es el proyecto y el mapa de carpetas
-estado.md          qué está hecho, qué falta (se actualiza al terminar algo)
+ACTUALIZACION.md   estado y cambios para quien se integra (se actualiza al terminar algo)
+docs/              documentación: conclusiones, resultados/, equipos/, esta guía
 pipeline.md        los pasos, comando por comando, explicados
-guia_equipo.md     este archivo
 environment.yml    entorno conda (MRtrix + Python)
 data/              entrada, NO se modifica, NO se sube a Git
 out/               todo lo generado, plano, NO se sube a Git
@@ -113,7 +113,7 @@ python scripts/evaluar_pesos.py <METODO> out/pesos_<metodo>.txt
 | Etiqueta por haz | por decidir | `06_etiquetas.py` | `out/etiquetas.csv` |
 | Regla de decisión | por decidir | `07_decision.py` | `out/keep_<estrategia>.txt` |
 
-- `README.md`, `estado.md`, `pipeline.md` y `environment.yml` son compartidos: se editan **solo para agregar su sección o su línea**, sin reescribir lo de los demás.
+- `README.md`, `ACTUALIZACION.md`, `pipeline.md` y `environment.yml` son compartidos: se editan **solo para agregar su sección o su línea**, sin reescribir lo de los demás.
 - Numeración de scripts: respeten los números de arriba. Si necesitan uno nuevo, el siguiente libre.
 
 ### Lo que le toca a cada método nuevo
@@ -137,7 +137,7 @@ Cada sección sigue este formato:
 
 Lo que **no** va: guías largas, teoría, planes, cronogramas.
 
-Al terminar algo, actualicen `estado.md` (tabla de pasos y pendiente) y agreguen una fila a la bitácora al final de `pipeline.md` con fecha y qué hicieron.
+Al terminar algo, actualicen `ACTUALIZACION.md` (tabla de pasos y pendiente) y agreguen una fila a la bitácora al final de `pipeline.md` con fecha y qué hicieron.
 
 ---
 
@@ -178,6 +178,6 @@ git push                          # al terminar
 - [ ] Entrega `out/pesos_<metodo>.txt` con 100 000 pesos, ≥ 0, sin `NaN`.
 - [ ] Generó su matriz 84 × 84 y pasó `exportar_matriz84.py`.
 - [ ] `pipeline.md` tiene su sección: comandos sueltos, explicación, "Se espera".
-- [ ] `estado.md` y la bitácora actualizados.
+- [ ] `ACTUALIZACION.md` y la bitácora actualizados.
 - [ ] No agregó carpetas ni archivos fuera de la estructura.
 - [ ] No subió `data/` ni `out/`.

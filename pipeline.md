@@ -146,7 +146,7 @@ El aviso `nodes are missing from the parcellation image: 15` es esperable: la re
 
 ## Paso 6. COMMIT2 (variante de COMMIT) — `scripts/06_commit2.sh`
 
-COMMIT2 es COMMIT con una penalización extra: los hilos que unen el mismo par de regiones forman un grupo y el ajuste prefiere apagar conexiones completas poco respaldadas por la señal. Una compañera lo probó antes (λ = 1e-2, 62 779 de 100 000 hilos con peso > 0; ver `docs/resumen_del_flujo_de_post_procesamiento_commit2.md`); **este paso lo deja reproducible en el repo y es parte de nuestro trabajo**.
+COMMIT2 es COMMIT con una penalización extra: los hilos que unen el mismo par de regiones forman un grupo y el ajuste prefiere apagar conexiones completas poco respaldadas por la señal. Una compañera lo probó antes (λ = 1e-2, 62 779 de 100 000 hilos con peso > 0; ver `docs/equipos/resumen_del_flujo_de_post_procesamiento_commit2.md`); **este paso lo deja reproducible en el repo y es parte de nuestro trabajo**.
 
 ```bash
 python scripts/correr_commit2.py            # λ = 1e-2; otro valor: --lambda=5e-3
@@ -159,6 +159,16 @@ bash scripts/06_commit2.sh
 Corre lo anterior si faltan los pesos, verifica el `md5`, el número de pesos (100 000, ≥ 0, sin `NaN`) y genera `out/connectome_commit2.csv` (`tck2connectome -symmetric -zero_diagonal`, 84 × 84), `out/matriz_commit2.xlsx` y `out/evaluacion_commit2.txt`. `comparar_pesos.py` y `comparar_matrices.py` lo incluyen solos.
 
 **Estado:** escrito, **sin correr** (no cabe en la laptop de desarrollo). Corregido respecto al flujo original: matriz de 84 × 84 con `tck2connectome` (antes 85 × 85 con el nodo 0 y la diagonal llena) y el mismo tractograma oficial. Para comparar con su corrida: si Sarahi pasa su `commit2_lam1e-2_weights.txt`, ponerlo en `out/commit2/pesos_commit2.txt`.
+
+## Paso 8. Etiqueta por Hausdorff — `scripts/08_hausdorff.sh`
+
+Distancia de cada hilo de `data/tracks_100k.tck` al ground truth (`data/GT/all_tracks.tck`); sirve para decir qué hilos "corresponden al GT" (junta del 17 nov). Se reparte en bloques entre computadoras; instrucciones completas en `docs/hausdorff_instrucciones.md`.
+
+```bash
+bash scripts/08_hausdorff.sh 3 7      # esta computadora hace el bloque 3 de 7 (≈ 25 min) -> out/hausdorff/bloque_3_de_7.csv
+bash scripts/08_hausdorff.sh unir     # junta los 7 bloques -> out/hausdorff/hausdorff.csv
+```
+**Se espera:** 100 000 filas con `hilo, hd_min, hd_dir_min, gt_hilo`; en una prueba con 300 hilos, el 58 % tuvo un hilo del GT a menos de 10 mm.
 
 ## Números de control
 
@@ -201,3 +211,4 @@ Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % 
 | 2026-11-10 | Pasos 1–4 corridos en macOS con el `tracks_100k.tck` compartido (en `data/`): COMMIT en 1 min 15 s, 44 780 pesos en 0, AUC 0.829 por conexión. Coincide con los números de control. |
 | 2026-11-13 | Fusión con el repo `MaximilianoVM/diffw-MRI`: conda (`environment.yml`) y venv (`requirements.txt`) documentados como alternativas. |
 | 2026-11-13 | COMMIT2 integrado como parte nuestra: `correr_commit2.py` (group lasso) y `06_commit2.sh`; sin correr, pendiente de la máquina grande. |
+| 2026-11-18 | Documentos reorganizados en `docs/`; `ACTUALIZACION.md` en la raíz; `08_hausdorff.sh` para la etiqueta por Hausdorff (probado con 300 hilos: ≈ 0.1 s por hilo). |

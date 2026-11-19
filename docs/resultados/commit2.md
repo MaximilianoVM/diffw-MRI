@@ -123,4 +123,4 @@ Para la normalización: con estos métodos, **combinar empeora a COMMIT2**. Si s
 1. Regenerar los mapas de COMMIT: `bash scripts/03_commit.sh` (≈ 75 s).
 2. Preguntar a la compañera su configuración de COMMIT2 (sección 7).
 3. Decidir con el equipo qué λ usar y si COMMIT2 entra a la normalización como método aparte o reemplaza a COMMIT.
-4. Repetir todo con LiFE cuando llegue `out/life/pesos_life.txt` (`instrucciones_life.md`).
+4. Repetir todo con LiFE cuando llegue `out/life/pesos_life.txt` (`docs/equipos/instrucciones_life.md`).

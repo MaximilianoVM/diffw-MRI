@@ -1,6 +1,6 @@
 """Normalización Ricardo: combina los pesos de los métodos por rango percentil y evalúa contra el GT por haz.
 
-Implementa docs/Normalizacion Ricardo.md. Ajustes de consideraciones_normalizacion_ricardo.md:
+Implementa docs/equipos/Normalizacion Ricardo.md. Ajustes de docs/resultados/normalizacion.md:
 .tck en vez de .trk, entradas del contrato del repo y etiqueta por haz con MDF.
 
 Uso (desde la raíz del proyecto, con el entorno activado):

@@ -2,7 +2,7 @@
 # =============================================================================
 # LiFE sobre el tractograma oficial tracks_100k.tck  ->  lo que necesita el equipo de COMMIT
 #
-# Es el mismo método de docs/life_metodo.md (DIPY: FiberModel(gtab).fit(data, hilos, inv(affine)),
+# Es el mismo método de docs/equipos/life_metodo.md (DIPY: FiberModel(gtab).fit(data, hilos, inv(affine)),
 # .bvec original). Lo único que cambia es el tractograma: tracks_100k.tck en vez de tracks.tck.
 #
 # Uso:
@@ -72,7 +72,7 @@ disp_kb=$(awk '/MemAvailable/{a=$2} /SwapFree/{s=$2} END{print a+s}' /proc/memin
 disp_gb=$((disp_kb / 1024 / 1024))
 echo "  RAM disponible + swap libre: ${disp_gb} GB (la corrida completa pide ~${RAM_NECESARIA_GB} GB)"
 if [ $PRUEBA = 0 ] && [ "$disp_gb" -lt "$RAM_NECESARIA_GB" ] && [ "${FORZAR:-0}" != 1 ]; then
-  falla "no alcanza la memoria. Suban la memoria/swap de WSL (ver instrucciones_life.md, sección 'Memoria') o corran con FORZAR=1 bajo su riesgo"
+  falla "no alcanza la memoria. Suban la memoria/swap de WSL (ver docs/equipos/instrucciones_life.md, sección 'Memoria') o corran con FORZAR=1 bajo su riesgo"
 fi
 ok "memoria suficiente (o modo prueba)"
 
