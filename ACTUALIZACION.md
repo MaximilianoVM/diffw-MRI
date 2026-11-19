@@ -42,11 +42,11 @@ Un archivo por método, 100 000 números ≥ 0, en el orden de `data/tracks_100k
 | Método | Archivo | Dónde está |
 |---|---|---|
 | SIFT2 | `out/pesos_sift2.txt` | laptop de desarrollo y Mac (una sola línea con cabecera `#`) |
-| COMMIT | `out/commit/pesos_commit.txt` | **solo en la Mac** (`out/` no se sube a Git) |
+| COMMIT | `out/commit/pesos_commit.txt` | **subido a Git** (commit `c22f920`, 2026-11-19) |
 | LiFE | `out/life/pesos_life.txt` (= `out/equipos/life_100k/life_weights.txt`, subido a Git) | LiFE sí está en el repo |
-| COMMIT2 (extra) | `out/commit2/pesos_commit2.txt` | solo en la Mac |
+| COMMIT2 (extra) | `out/commit2/pesos_commit2.txt` | **subido a Git** (commit `c22f920`, λ = 1e-2) |
 
-Cargar: `np.loadtxt(archivo, comments="#").ravel()`. Para tener los tres en cada máquina hay que pasar por Drive los de COMMIT (y SIFT2 si falta).
+Cargar: `np.loadtxt(archivo, comments="#").ravel()`. COMMIT, COMMIT2 y LiFE llegan con `git pull`; solo SIFT2 hay que pasarlo por Drive si falta (el `.gitignore` ya lo permite, pero todavía no está subido).
 
 ## 5. Siguientes pasos
 
