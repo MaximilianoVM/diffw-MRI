@@ -12,11 +12,12 @@ environment.yml     entorno conda (WSL/Linux): MRtrix + COMMIT
 requirements.txt    versiones exactas de Python (venv, macOS)
 data/               entrada y tracks_100k.tck (no se sube; ver data/README.md)
 out/                todo lo generado (COMMIT en out/commit/); no se sube
-scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff
+scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos
                     + los .py de apoyo (correr_*, comparar_*, evaluar_pesos, normalizacion_ricardo...)
 docs/
   junta_17nov.md        objetivo según el investigador
   diagramas.md          flujo de datos y fases del proyecto
+  filtrado_pesos.md     paso 9: normalizar (entre el máximo) y filtrar con ε
   conclusiones.md       qué sabemos hasta ahora
   explicacion_commit.md qué hace COMMIT y cómo se lee la matriz 84 x 84
   guia_equipo.md        reglas de trabajo y contrato de pesos

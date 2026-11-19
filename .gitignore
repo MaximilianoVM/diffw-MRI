@@ -2,7 +2,17 @@
 # Se comparten por la carpeta común / Drive.
 data/*
 !data/README.md
-out/
+out/*
+# pero sí se suben los vectores de pesos (100 000 números, ~1 MB c/u): son el entregable de cada método
+!out/pesos_sift2.txt
+!out/commit/
+out/commit/*
+!out/commit/pesos_commit.txt
+!out/commit2/
+out/commit2/*
+!out/commit2/pesos_commit2.txt
+!out/equipos/
+!out/filtrado/
 
 # Intercambio con el otro equipo (copias de sus archivos, no son nuestros)
 equipo_chat/
