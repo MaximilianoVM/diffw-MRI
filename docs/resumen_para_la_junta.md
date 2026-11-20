@@ -1,6 +1,6 @@
 # Resumen del proyecto para la junta con el doctor (19-nov-2026)
 
-Para leer **antes de la junta**, incluso si no has seguido el trabajo de cerca. Va de lo general a lo detallado: si solo tienes 5 minutos, lee las secciones 1, 2 y 9 (estado).
+Para leer **antes de la junta**, incluso si no has seguido el trabajo de cerca. Va de lo general a lo detallado: si solo tienes 5 minutos, lee las secciones 1, 2, 9 (tractograma contra el GT) y 10 (estado).
 Cada sección dice dónde están los detalles por si alguien quiere profundizar.
 
 ---
@@ -13,9 +13,9 @@ Cada sección dice dónde están los detalles por si alguien quiere profundizar.
 5. Evaluamos cada método contra esa verdad. **Resultado: SIFT2 y COMMIT, solos, no sirven para filtrar (están por debajo del azar); LiFE y COMMIT2 sirven un poco; COMMIT2 es el mejor.**
 6. La causa: los pesos de SIFT2 y COMMIT dependen mucho de la **longitud** del hilo (SIFT2 da pesos altos a hilos cortos, que casi nunca son verdaderos). Sin ese efecto, sus pesos no dicen nada sobre si el hilo es verdadero.
 7. **Un modelo** (regresión logística) que combina los pesos **sí** aprovecha los 3 métodos del doctor: aprende a restarle importancia a SIFT2 y COMMIT. AUC 0.62 con los 3 métodos; 0.70 con los 4 y la longitud.
-8. Para quedarse con **pocos hilos muy confiables**, lo mejor es **LiFE + COMMIT2**: 54 % de aciertos conservando 10 000 hilos (contra 33 % sin filtrar).
-9. **Falta (aún sin resultados):** comparar el **tractograma filtrado completo** contra el GT (qué haces se recuperan, Dice por haz) y redactar el informe. La Mac lo tiene como tarea; todo lo demás de este documento **ya está medido**.
-10. Todo es reproducible con scripts numerados (`scripts/01…11`), ver sección 12.
+8. Para quedarse con **pocos hilos muy confiables**, lo mejor es **LiFE + COMMIT2**: 54 % de aciertos conservando 10 000 hilos (contra 33 % sin filtrar). **Pero** pierde haces enteros (punto 9).
+9. **Tractograma filtrado completo contra el GT (ya medido):** lo que mejor acierta hilo por hilo recupera 14 haces, contra 20 sin filtrar: **pierde 6** (BPS izquierdo y derecho, Fornix, ICP izquierdo y derecho, y CA), porque COMMIT2 les pone peso 0 a casi todos sus hilos. SIFT2 y COMMIT, que fallan hilo por hilo, sí cubren 20 de 21 haces, pero dejan 75–78 % de hilos falsos. **Ningún filtro logra a la vez pocos falsos y todos los haces.** Falta fijar el ε final con el doctor y redactar el informe.
+10. Todo es reproducible con scripts numerados (`scripts/01…11`), ver sección 13.
 
 ---
 
@@ -79,7 +79,7 @@ Detalle: `docs/hausdorff_instrucciones.md`, `docs/hausdorff_eficiencia.md`, `doc
 
 **ε = 5 mm** es nuestra propuesta principal (≈ 2.5 vóxeles de 2 mm; el mismo valor que usamos antes con otra etiqueta, para poder comparar). **Está pendiente de que el doctor lo confirme.** Con 2 mm casi no habría hilos verdaderos; las conclusiones no cambian con 3 o 7 mm.
 
-**Por qué no tardó 3 días.** Las notas estimaban ≈ 3 días por 10 000 hilos (comparar cada hilo contra los 189 985 del GT). Nosotros descartamos primero, con un índice espacial, los hilos del GT que geométricamente están a más de 10 mm (no pueden ser la respuesta), y calculamos la distancia exacta solo contra los pocos que quedan. Medido: **fuerza bruta ≈ 22 s por hilo; nuestro método ≈ 0.12 s**. En 40 hilos al azar el resultado es **idéntico** (diferencia máxima 0.0 mm), y remuestrear a 2 mm cambia a lo más 0.24 mm. Respuesta corta para el doctor: sección 10.
+**Por qué no tardó 3 días.** Las notas estimaban ≈ 3 días por 10 000 hilos (comparar cada hilo contra los 189 985 del GT). Nosotros descartamos primero, con un índice espacial, los hilos del GT que geométricamente están a más de 10 mm (no pueden ser la respuesta), y calculamos la distancia exacta solo contra los pocos que quedan. Medido: **fuerza bruta ≈ 22 s por hilo; nuestro método ≈ 0.12 s**. En 40 hilos al azar el resultado es **idéntico** (diferencia máxima 0.0 mm), y remuestrear a 2 mm cambia a lo más 0.24 mm. Respuesta corta para el doctor: sección 11.
 
 **Qué significa «verdadero».** Es una aproximación: «este hilo está a menos de ε mm de algún hilo del GT». Depende de ε y exige coincidencia de punta a punta. Existe porque el fantoma es simulado y conocemos el GT; con datos reales no habría GT.
 
@@ -160,30 +160,67 @@ Script: `bash scripts/11_modelo.sh` (≈ 30 s). Regresión logística: entra el 
 
 ---
 
-## 9. Estado respecto al objetivo
-| | Qué pide el objetivo | Estado |
-|---|---|---|
-| A | 100 000 pesos por método | **Hecho** (SIFT2, LiFE, COMMIT; COMMIT2 extra) |
-| B | Normalizar a (0,1), filtrar con ε y comparar cada método con el GT | **Hecho por hilo** (precisión/AUC). Falta ε definitivo y comparar el **tractograma completo** (Dice por haz) |
-| C | Etiqueta por hilo con Hausdorff | **Hecho** (ε = 5 mm, pendiente de confirmar) |
-| D | Modelo de los 3 pesos y comparar su tractograma con el GT | **Modelo hecho** (por hilo); falta comparar **su tractograma** con el GT |
-| — | Informe | Por hacer |
+## 9. El tractograma filtrado contra el GT (haz por haz)
+Detalle: `docs/resultados/tractograma_modelo_vs_gt.md`. Scripts: `python scripts/puntajes_candidatos.py 5` y `scripts/normalizacion_ricardo.py --etiqueta hausdorff --mismos-n 10000 25000 50000` (≈ 1 min).
 
-**Qué falta, en orden:**
-1. **Comparar el tractograma filtrado completo contra el GT**, para cada método y para el modelo: qué haces (de 21) se recuperan, con qué solape (Dice por haz) y cuántos hilos falsos quedan. Hasta ahora medimos «¿cada hilo acierta?»; esto mide «¿el conjunto se parece al GT?». Es lo que la junta pide literalmente y lo más fácil de mostrar. **Tarea de la Mac** (`docs/siguiente_mac_normalizacion.md`, sección 3.4): se intentó en la laptop de desarrollo, pero tardaba demasiado y se detuvo sin resultados. Cuando la Mac termine, quedará en `docs/resultados/tractograma_modelo_vs_gt.md` y este resumen se actualizará.
-2. Fijar el ε final (de Hausdorff y de los pesos) con el doctor.
-3. Redactar el informe.
+Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el conjunto se parece al GT?»**, que es lo que la junta pide literalmente. Cada puntaje conserva el **mismo número de hilos** (los de mayor puntaje) y el tractograma resultante se compara con los 21 haces del GT:
+- **% falsos:** de los hilos conservados, cuántos no corresponden al GT (Hausdorff ≥ 5 mm). *Sin filtrar: 66.7 %.*
+- **Haces recuperados:** haces con Dice ≥ 0.3 (contar «al menos un hilo» sería engañoso: un haz con 2 hilos no está recuperado).
+- **Dice:** solape en vóxeles entre lo que queda de cada haz y el haz del GT, promediado sobre los 21. Solo cuenta los hilos verdaderos; los falsos se miden aparte, con el % de falsos.
+
+**Conservando 25 000 hilos (de 100 000):**
+| Puntaje | % falsos | Haces recuperados (de 21) | Dice |
+|---|---|---|---|
+| mínimo LiFE + COMMIT2 | **46.8 %** | 14 | 0.49 |
+| COMMIT2 solo | 47.5 % | 14 | 0.50 |
+| modelo 4 métodos | 49.7 % | 14 | 0.50 |
+| modelo 4 métodos + longitud | 51.8 % | 13 | 0.42 |
+| modelo 3 métodos del doctor (SIFT2 + LiFE + COMMIT) | 57.4 % | 15 | 0.48 |
+| LiFE solo | 58.9 % | 17 | 0.49 |
+| longitud sola | 57.8 % | 9 | 0.32 |
+| COMMIT solo | 74.7 % | **20** | **0.70** |
+| SIFT2 solo | 78.5 % | **20** | 0.62 |
+| *sin filtrar (100 000 hilos)* | *66.7 %* | *20* | *0.77* |
+
+**Lectura.**
+- **Esta evaluación contradice a la de por hilo.** Lo más preciso por hilo (mínimo LiFE + COMMIT2, COMMIT2, los modelos) deja menos falsos, pero **pierde los mismos 6 haces**: BPS izquierdo y derecho, Fornix, ICP izquierdo y derecho, y CA (que tiene solo 33 hilos verdaderos). CP no cuenta: tiene 1 solo hilo verdadero y no se recupera ni sin filtrar. SIFT2 y COMMIT, los peores por hilo, recuperan 20 de 21.
+- **La causa es COMMIT2:** les pone peso 0 al 99.7 % de los hilos verdaderos de BPS y al 100 % de los de Fornix e ICP (su group lasso apaga conexiones completas). Todo puntaje que dependa de COMMIT2 hereda esa pérdida. LiFE sí conserva entre el 53 % y el 92 % de esos hilos.
+- **El modelo con longitud es el que más haces pierde** (7 de 21 con 10 000 hilos): se queda con hilos largos y abandona los haces cortos, como ICP (≈ 60 mm).
+- **No hay un ganador en las dos cosas.** Si se prioriza un tractograma limpio: mínimo LiFE + COMMIT2 (46.8 % de falsos, 14 haces). Si se prioriza no perder haces: el modelo de los 3 métodos del doctor (15 haces, 57.4 %) o LiFE solo (17 haces, 58.9 %), ambos mejores que no filtrar. COMMIT cubre 20 haces, pero con más falsos que no filtrar.
+- **Con 50 000 hilos casi todos recuperan 20 haces** y el % de falsos de los mejores sube a 54–59 %: a ese tamaño el filtro ayuda poco.
+- **Pendiente:** COMMIT2 se corrió con λ = 1e-2. Con un λ menor quizá no apague BPS, Fornix e ICP. Hay que revisarlo con Sarahi (su corrida y la nuestra ya diferían en el número de pesos distintos de cero: 62 779 contra 36 928).
 
 ---
 
-## 10. Preguntas que puede hacer el doctor (y respuestas)
+## 10. Estado respecto al objetivo
+| | Qué pide el objetivo | Estado |
+|---|---|---|
+| A | 100 000 pesos por método | **Hecho** (SIFT2, LiFE, COMMIT; COMMIT2 extra) |
+| B | Normalizar a (0,1), filtrar con ε y comparar cada método con el GT | **Hecho**: por hilo (precisión/AUC) y por tractograma (haces recuperados, Dice, % falsos; sección 9). Falta el ε definitivo |
+| C | Etiqueta por hilo con Hausdorff | **Hecho** (ε = 5 mm, pendiente de confirmar) |
+| D | Modelo de los 3 pesos y comparar su tractograma con el GT | **Hecho** (secciones 8 y 9) |
+| — | Informe | Por hacer |
+
+**Qué falta, en orden:**
+1. **Decidir con el doctor qué se prioriza:** un tractograma limpio (pocos falsos, pero se pierden BPS, Fornix e ICP) o no perder haces (más falsos). La sección 9 tiene las dos opciones.
+2. **Revisar COMMIT2 con Sarahi:** con un λ menor quizá no apague BPS, Fornix e ICP, y eso cambiaría la recomendación.
+3. Fijar el ε final (de Hausdorff y de los pesos) con el doctor.
+4. Redactar el informe.
+
+---
+
+## 11. Preguntas que puede hacer el doctor (y respuestas)
 **«¿Por qué su Hausdorff no tardó 3 días?»** Es la misma distancia contra los 189 985 hilos del GT. Solo evitamos calcularla contra los hilos del GT que geométricamente están a más de 10 mm, con un índice espacial (KD-tree). Lo comprobamos contra fuerza bruta en 40 hilos al azar: resultado idéntico. La fuerza bruta mide 22 s/hilo (≈ 2.5 días por 10 000 hilos: coincide con su estimación); la nuestra, 0.12 s/hilo.
 
 **«¿Por qué ε = 5 mm?»** Es una propuesta: ≈ 2.5 vóxeles, y el mismo valor con el que comparamos antes. Guardamos las distancias, no el 0/1, así que cualquier ε se obtiene sin recalcular. Con 3 y 7 mm las conclusiones no cambian.
 
 **«¿Por qué SIFT2 sale por debajo del azar?»** Da pesos altos a hilos cortos, y los cortos casi nunca están en el GT. Entre hilos de longitud parecida su peso no distingue verdaderos de falsos (AUC 0.51). Es coherente con que SIFT2 busca ajustar la señal, no la plausibilidad anatómica.
 
-**«¿Entonces los métodos no sirven?»** Individualmente, SIFT2 y COMMIT no; LiFE y COMMIT2 sirven moderadamente. Combinados con un modelo sí se aprovechan los 3 (AUC 0.62 con los 3 del doctor, 0.70 con los 4 y la longitud).
+**«¿Entonces los métodos no sirven?»** Hilo por hilo, SIFT2 y COMMIT no; LiFE y COMMIT2 sirven moderadamente. Combinados con un modelo sí se aprovechan los 3 (AUC 0.62 con los 3 del doctor, 0.70 con los 4 y la longitud). Pero en el tractograma completo SIFT2 y COMMIT son los que mejor conservan los 21 haces (sección 9): dejan muchos falsos, pero no apagan haces enteros.
+
+**«¿Qué tractograma filtrado recomiendan?»** Depende de qué se priorice. Para un tractograma limpio, el mínimo de LiFE + COMMIT2 (con 25 000 hilos: 46.8 % de falsos contra 66.7 % sin filtrar), avisando que pierde BPS, Fornix e ICP. Para no perder haces, el modelo de los 3 métodos del doctor o LiFE solo (15–17 de 21 haces, ≈ 58 % de falsos).
+
+**«¿Por qué se pierden BPS, Fornix e ICP?»** Porque COMMIT2 les pone peso 0 a casi todos sus hilos verdaderos (99.7–100 %): su regularización apaga conexiones completas. Cualquier combinación con COMMIT2 hereda esa pérdida. Lo vamos a revisar con otro λ.
 
 **«¿El modelo no está haciendo trampa con la etiqueta?»** Se entrena con la mitad de los hilos y se evalúa en la otra mitad; los AUC de entrenamiento y prueba difieren < 0.01. Falta además validar en otro conjunto (otro fantoma o tractograma).
 
@@ -195,18 +232,20 @@ Script: `bash scripts/11_modelo.sh` (≈ 30 s). Regresión logística: entra el 
 
 ---
 
-## 11. Limitaciones (para decirlas nosotros antes de que pregunten)
+## 12. Limitaciones (para decirlas nosotros antes de que pregunten)
 - Es **un solo fantoma simulado** y un solo tractograma. No sabemos si se generaliza.
 - «Verdadero» = cerca del GT (Hausdorff < ε). Es estricto: un hilo que sigue bien al GT solo en un tramo cuenta como falso.
 - Un solo ε principal (5 mm); y un solo corte entrenamiento/prueba 50/50.
 - La regresión logística es lineal; un modelo no lineal podría extraer más, sobre todo de la interacción peso × longitud.
 - El orden de los vectores de COMMIT y COMMIT2 se verificó solo por tamaño.
+- El Dice por haz solo cuenta los hilos verdaderos: un método con 85 % de falsos puede tener buen Dice. Hay que leerlo siempre junto al % de falsos.
+- COMMIT2 se corrió con un solo λ (1e-2), y es el que apaga BPS, Fornix e ICP.
 - Los pesos de SIFT2 del equipo de SIFT2 (máx 3.7069) difieren un poco de los nuestros (máx 3.7022): usamos los nuestros.
 - Los porcentajes de hilos falsos de la normalización vieja (con otra etiqueta) **no** son comparables con los de ahora.
 
 ---
 
-## 12. Dónde está cada cosa
+## 13. Dónde está cada cosa
 | Paso | Script | Qué hace |
 |---|---|---|
 | 01–03, 05 | `01_preprocess`, `02_tractography` (+SIFT2), `03_commit`, `05_life` | datos y pesos de cada método |
@@ -215,12 +254,13 @@ Script: `bash scripts/11_modelo.sh` (≈ 30 s). Regresión logística: entra el 
 | 09 | `09_filtrar_pesos.sh`, `09_filtrar_todos.sh` | normalizar y filtrar con ε |
 | 10 | `10_evaluar.sh` | evalúa cada método contra Hausdorff |
 | 11 | `11_modelo.sh` | normalización de Ricardo y modelo vs Hausdorff |
+| D (tractograma) | `puntajes_candidatos.py` + `normalizacion_ricardo.py --etiqueta hausdorff --mismos-n …` | tractograma filtrado contra el GT, haz por haz (sección 9) |
 
 Documentos: `README.md` (mapa), `pipeline.md` (pasos y números de control), `ACTUALIZACION.md` (estado), `docs/diagramas.md` (flujo de datos y fases), `docs/conclusiones.md` (conclusiones anteriores).
 
 ---
 
-## 13. Glosario
+## 14. Glosario
 - **Streamline / hilo:** trayectoria 3D (lista de puntos en mm) que representa una fibra.
 - **Tractograma:** conjunto de streamlines. **GT (ground truth):** las fibras verdaderas del fantoma simulado.
 - **Peso:** número que un método le da a cada hilo (qué tan creíble es).
