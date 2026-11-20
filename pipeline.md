@@ -226,3 +226,4 @@ Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % 
 | 2026-11-18 | Documentos reorganizados en `docs/`; `ACTUALIZACION.md` en la raíz; `08_hausdorff.sh` para la etiqueta por Hausdorff (probado con 300 hilos: ≈ 0.1 s por hilo). |
 | 2026-11-19 | Hausdorff de los 100 000 hilos (7 bloques) unido en `out/hausdorff/hausdorff.csv`; ε de Hausdorff = 5 mm (`etiqueta_5mm`, 33.3 % verdaderos). |
 | 2026-11-19 | Paso 11 (Mac): normalización de Ricardo y regresión logística contra Hausdorff; `--etiqueta hausdorff` en `normalizacion_ricardo.py`. Ver `docs/resultados/modelo_y_normalizacion_hausdorff.md`. |
+| 2026-11-19 | Sección 3.4 (Mac): tractograma filtrado contra el GT con `--mismos-n` (10 000 / 25 000 / 50 000); los puntajes con COMMIT2 pierden BPS, Fornix e ICP. Ver `docs/resultados/tractograma_modelo_vs_gt.md`. |

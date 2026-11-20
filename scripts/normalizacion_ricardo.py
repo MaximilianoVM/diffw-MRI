@@ -302,15 +302,17 @@ def main():
                 k = np.zeros(N, bool)
                 k[orden[:n]] = True
                 df, res = evaluar(f"{m}", k, con_mdf=False)
+                res["haces_dice_0.3"] = int((df.dice >= 0.3).sum())   # «detectado» cuenta un haz con 1 solo hilo
                 filas.append({"n": n, **res}); tablas.append(df.assign(n=n))
         df, res = evaluar("sin filtrar", np.ones(N, bool), con_mdf=False)
+        res["haces_dice_0.3"] = int((df.dice >= 0.3).sum())
         filas.append({"n": N, **res}); tablas.append(df.assign(n=N))
         R = pd.DataFrame(filas)
         R.to_csv(f"{a.salida}/comparacion_mismos_n.csv", index=False)
         pd.concat(tablas).to_csv(f"{a.salida}/comparacion_mismos_n_por_conducto.csv", index=False)
         pd.set_option("display.width", 220)
-        print("\n" + R[["n", "metodo", "hilos_conservados", "conductos_detectados", "pct_fibras_falsas",
-                        "cobertura", "desborde", "dice"]].round(3).to_string(index=False))
+        print("\n" + R[["n", "metodo", "hilos_conservados", "conductos_detectados", "haces_dice_0.3",
+                        "pct_fibras_falsas", "cobertura", "desborde", "dice"]].round(3).to_string(index=False))
         print(f"guardado en {a.salida}/")
         return
 

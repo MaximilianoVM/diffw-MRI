@@ -33,7 +33,7 @@
 | A. Vector de 100 000 pesos por método | **Hecho** para SIFT2, COMMIT, LiFE (y COMMIT2 como extra). Contrato cumplido. |
 | B. Normalizar a (0, 1), filtrar con ε, comparar cada método con el GT | **Parcial.** Hay percentiles y cortes, pero no el esquema simple de la junta (ε = 0.01 sobre pesos normalizados) |
 | C. Etiqueta 0/1 por hilo con **Hausdorff** | **Hecho** (2026-11-19). Los 7 bloques están en `distancias_hausdorff/` y juntos en `out/hausdorff/hausdorff.csv` (subido a Git). **ε = 5 mm decidido:** `etiqueta_5mm` = 1 si `hd_min` < 5 mm → 33 349 verdaderos (33.3 %). La etiqueta MDF < 5 mm (`out/normalizacion/etiqueta_mdf.csv`, 54.8 %) queda solo para comparar |
-| D. Modelo `(x_S, x_L, x_C) → etiqueta` y comparar su tractograma | **Parcial** (2026-11-19): regresión logística con separación 50/50 (`scripts/11_modelo.sh`). AUC en prueba: 3 métodos 0.62, + longitud 0.66, 4 métodos + longitud 0.70 (SIFT2 con coeficiente negativo). Para filtrar, el mejor es LiFE + COMMIT2 (mínimo de percentiles: 54 % verdaderos con 10 000 hilos). Falta comparar el tractograma del modelo contra el GT. Ver `docs/resultados/modelo_y_normalizacion_hausdorff.md` |
+| D. Modelo `(x_S, x_L, x_C) → etiqueta` y comparar su tractograma | **Hecho** (2026-11-19). Modelo: regresión logística 50/50 (`scripts/11_modelo.sh`, AUC en prueba 0.62 con los 3 métodos, 0.70 con los 4 + longitud). Tractograma contra el GT con el mismo número de hilos (`normalizacion_ricardo.py --mismos-n`): el mínimo LiFE+COMMIT2 deja menos falsos (46.8 % con 25 000) pero pierde BPS, Fornix e ICP porque COMMIT2 les pone peso 0; COMMIT y SIFT2 cubren 20 de 21 haces con 75–78 % de falsos. Ver `docs/resultados/tractograma_modelo_vs_gt.md` |
 
 ## 4. Dónde están los vectores de pesos (paso A)
 
