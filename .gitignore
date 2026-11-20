@@ -11,6 +11,10 @@ out/commit/*
 !out/commit2/
 out/commit2/*
 !out/commit2/pesos_commit2.txt
+# y la etiqueta por Hausdorff de los 100 000 hilos (paso 8)
+!out/hausdorff/
+out/hausdorff/*
+!out/hausdorff/hausdorff.csv
 !out/equipos/
 !out/filtrado/
 

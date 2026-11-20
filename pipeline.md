@@ -170,6 +170,8 @@ bash scripts/08_hausdorff.sh unir     # junta los 7 bloques -> out/hausdorff/hau
 ```
 **Se espera:** 100 000 filas con `hilo, hd_min, hd_dir_min, gt_hilo`; en una prueba con 300 hilos, el 58 % tuvo un hilo del GT a menos de 10 mm.
 
+**Resultado (2026-11-19):** los 7 bloques están en `distancias_hausdorff/`; juntos en `out/hausdorff/hausdorff.csv` con la columna extra `etiqueta_5mm` (ε = 5 mm decidido: 1 si `hd_min` < 5 mm, 33.3 % de los hilos). El 58.6 % tiene un hilo del GT a menos de 10 mm.
+
 ## Números de control
 
 | Qué | Valor esperado |
@@ -212,3 +214,4 @@ Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % 
 | 2026-11-13 | Fusión con el repo `MaximilianoVM/diffw-MRI`: conda (`environment.yml`) y venv (`requirements.txt`) documentados como alternativas. |
 | 2026-11-13 | COMMIT2 integrado como parte nuestra: `correr_commit2.py` (group lasso) y `06_commit2.sh`; sin correr, pendiente de la máquina grande. |
 | 2026-11-18 | Documentos reorganizados en `docs/`; `ACTUALIZACION.md` en la raíz; `08_hausdorff.sh` para la etiqueta por Hausdorff (probado con 300 hilos: ≈ 0.1 s por hilo). |
+| 2026-11-19 | Hausdorff de los 100 000 hilos (7 bloques) unido en `out/hausdorff/hausdorff.csv`; ε de Hausdorff = 5 mm (`etiqueta_5mm`, 33.3 % verdaderos). |

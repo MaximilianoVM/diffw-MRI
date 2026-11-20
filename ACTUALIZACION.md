@@ -32,7 +32,7 @@
 |---|---|
 | A. Vector de 100 000 pesos por método | **Hecho** para SIFT2, COMMIT, LiFE (y COMMIT2 como extra). Contrato cumplido. |
 | B. Normalizar a (0, 1), filtrar con ε, comparar cada método con el GT | **Parcial.** Hay percentiles y cortes, pero no el esquema simple de la junta (ε = 0.01 sobre pesos normalizados) |
-| C. Etiqueta 0/1 por hilo con **Hausdorff** | **En curso:** script listo y probado (`scripts/08_hausdorff.sh`), falta correrlo en las 7 computadoras. Existe una etiqueta por MDF < 5 mm (`out/normalizacion/etiqueta_mdf.csv`, 54.8 % verdaderos) que se calcula en ≈ 2 min; no es Hausdorff |
+| C. Etiqueta 0/1 por hilo con **Hausdorff** | **Hecho** (2026-11-19). Los 7 bloques están en `distancias_hausdorff/` y juntos en `out/hausdorff/hausdorff.csv` (subido a Git). **ε = 5 mm decidido:** `etiqueta_5mm` = 1 si `hd_min` < 5 mm → 33 349 verdaderos (33.3 %). La etiqueta MDF < 5 mm (`out/normalizacion/etiqueta_mdf.csv`, 54.8 %) queda solo para comparar |
 | D. Modelo `(x_S, x_L, x_C) → etiqueta` y comparar su tractograma | **Falta** |
 
 ## 4. Dónde están los vectores de pesos (paso A)
@@ -53,11 +53,11 @@ Cargar: `np.loadtxt(archivo, comments="#").ravel()`. COMMIT, COMMIT2 y LiFE lleg
 **Paso B (el primero): filtrar cada método por separado.** Cada vector se normaliza a (0, 1) y se descartan los hilos con peso < ε, **método por método** (páginas 2 y 3 de la junta). Cada método da así su tractograma filtrado, que se compara con el GT. Falta implementarlo (hoy solo hay filtros por peso > 0 y combinaciones con percentiles, sin barrido de ε). Hace falta decidir cómo normalizar: min-max (lectura literal de las notas) o percentil (el de Ricardo). Propuesta (el usuario decide):
 - Hay **dos ε distintos**: el del peso normalizado (en (0, 1)) y el de Hausdorff (en mm).
 - **ε del peso:** con percentiles, ε = 0.01 solo descarta el 1 % más bajo; con min-max casi no descarta nada en SIFT2. En vez de fijar un valor, **barrer ε** (por ejemplo 0.01 a 0.9) y reportar, para cada método, cuántos hilos quedan y cuántos corresponden al GT. Comparar métodos con el **mismo número de hilos conservados** para que sea justo.
-- **ε de Hausdorff:** guardar las distancias y barrer 2, 3, 5, 7 y 10 mm. Propuesta principal: **5 mm** (≈ 2.5 vóxeles de 2 mm, y el mismo valor de la MDF para poder comparar).
+- **ε de Hausdorff: 5 mm (decidido el 2026-11-19)** (≈ 2.5 vóxeles de 2 mm, y el mismo valor de la MDF para poder comparar). Columna `etiqueta_5mm` de `out/hausdorff/hausdorff.csv`. Las distancias siguen guardadas por si se quiere mostrar el barrido: `hd_min` < 2, 3, 5, 7, 10 mm → 2.6 %, 13.0 %, 33.3 %, 46.0 %, 58.6 % de los hilos.
 
-Evaluar contra el GT con la etiqueta MDF mientras no exista la de Hausdorff.
+Evaluar contra el GT con `etiqueta_5mm` (Hausdorff); la etiqueta MDF ya no es la principal.
 
-**Paso C (en paralelo): etiqueta por Hausdorff.** No bloquea el paso B, pero se necesita para evaluarlo bien. Se reparte entre 7 computadoras con `bash scripts/08_hausdorff.sh <bloque> 7`. Instrucciones: `docs/hausdorff_instrucciones.md`. Argumento para mostrar también MDF: `docs/etiqueta_hausdorff_vs_mdf.md`.
+**Paso C (hecho el 2026-11-19): etiqueta por Hausdorff.** Resultado en `out/hausdorff/hausdorff.csv` (`hilo, hd_min, hd_dir_min, gt_hilo, etiqueta_5mm`). Cargar: `pd.read_csv("out/hausdorff/hausdorff.csv").etiqueta_5mm`. Se repartió entre 7 computadoras con `bash scripts/08_hausdorff.sh <bloque> 7`. Instrucciones: `docs/hausdorff_instrucciones.md`. Argumento para mostrar también MDF: `docs/etiqueta_hausdorff_vs_mdf.md`.
 
 **Paso D: modelo.** `(x_S, x_L, x_C) → etiqueta`:
 - Regresión logística como primera opción, y como comparación el **voto** (≥ 2 de 3 métodos) y el filtro simple por ε.
