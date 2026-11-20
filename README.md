@@ -12,7 +12,7 @@ environment.yml     entorno conda (WSL/Linux): MRtrix + COMMIT
 requirements.txt    versiones exactas de Python (venv, macOS)
 data/               entrada y tracks_100k.tck (no se sube; ver data/README.md)
 out/                todo lo generado (COMMIT en out/commit/); no se sube
-scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar
+scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar  11_modelo
                     + los .py de apoyo (correr_*, comparar_*, evaluar_pesos, normalizacion_ricardo...)
 docs/
   junta_17nov.md        objetivo según el investigador

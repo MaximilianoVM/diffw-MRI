@@ -172,6 +172,16 @@ bash scripts/08_hausdorff.sh unir     # junta los 7 bloques -> out/hausdorff/hau
 
 **Resultado (2026-11-19):** los 7 bloques están en `distancias_hausdorff/`; juntos en `out/hausdorff/hausdorff.csv` con la columna extra `etiqueta_5mm` (ε = 5 mm decidido: 1 si `hd_min` < 5 mm, 33.3 % de los hilos). El 58.6 % tiene un hilo del GT a menos de 10 mm.
 
+## Paso 11. Normalización y modelo contra Hausdorff — `scripts/11_modelo.sh`
+
+Evalúa la normalización de Ricardo (percentil global, por longitud, ×longitud, corte; promedios y votos) y una regresión logística (50 % entrenamiento / 50 % prueba) contra la etiqueta de Hausdorff < 5 mm, y repite con 3 y 7 mm.
+
+```bash
+bash scripts/11_modelo.sh             # ≈ 30 s -> out/evaluacion/normalizacion_hausdorff_E5.csv, out/modelo/resultados_E5.csv
+```
+**Se espera:** AUC SIFT2 0.426, COMMIT 0.449, LiFE 0.601, COMMIT2 0.634, longitud 0.652; logística 4 métodos + longitud ≈ 0.70 en prueba. Resultados y lectura: `docs/resultados/modelo_y_normalizacion_hausdorff.md`.
+También: `scripts/normalizacion_ricardo.py --etiqueta hausdorff [--eps-hd 5]` (métricas por haz con la etiqueta de Hausdorff).
+
 ## Números de control
 
 | Qué | Valor esperado |
@@ -215,3 +225,4 @@ Si olvidaron invertir *y*, se nota: hilos de ≈ 42 mm de media y solo ≈ 21 % 
 | 2026-11-13 | COMMIT2 integrado como parte nuestra: `correr_commit2.py` (group lasso) y `06_commit2.sh`; sin correr, pendiente de la máquina grande. |
 | 2026-11-18 | Documentos reorganizados en `docs/`; `ACTUALIZACION.md` en la raíz; `08_hausdorff.sh` para la etiqueta por Hausdorff (probado con 300 hilos: ≈ 0.1 s por hilo). |
 | 2026-11-19 | Hausdorff de los 100 000 hilos (7 bloques) unido en `out/hausdorff/hausdorff.csv`; ε de Hausdorff = 5 mm (`etiqueta_5mm`, 33.3 % verdaderos). |
+| 2026-11-19 | Paso 11 (Mac): normalización de Ricardo y regresión logística contra Hausdorff; `--etiqueta hausdorff` en `normalizacion_ricardo.py`. Ver `docs/resultados/modelo_y_normalizacion_hausdorff.md`. |

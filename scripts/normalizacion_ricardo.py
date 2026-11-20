@@ -119,9 +119,13 @@ def main():
                     help="multiplicar cada peso por la longitud del hilo (out/longitudes.txt) antes de normalizar")
     ap.add_argument("--corte", action="store_true",
                     help="en métodos sin ceros (SIFT2), poner en 0 la misma fracción de menor peso que COMMIT pone en 0")
-    ap.add_argument("--etiqueta", choices=["mdf", "mascara"], default="mdf",
+    ap.add_argument("--etiqueta", choices=["mdf", "mascara", "hausdorff"], default="mdf",
                     help="mdf: MDF < --mdf mm al haz más cercano (especificación). mascara: >= --frac-mascara de "
-                         "los puntos del hilo dentro de la máscara del haz dilatada 1 vóxel (no castiga hilos cortos)")
+                         "los puntos del hilo dentro de la máscara del haz dilatada 1 vóxel (no castiga hilos cortos). "
+                         "hausdorff: hd_min < --eps-hd mm en --hausdorff (paso 8; vacío = falso); el haz de cada "
+                         "hilo verdadero se toma del MDF más cercano")
+    ap.add_argument("--eps-hd", type=float, default=5.0, help="umbral de Hausdorff en mm (con --etiqueta hausdorff)")
+    ap.add_argument("--hausdorff", default="out/hausdorff/hausdorff.csv")
     ap.add_argument("--frac-mascara", type=float, default=0.9)
     ap.add_argument("--umbrales", type=float, nargs="+",
                     help="modo umbrales fijos: por cada u, eliminar los hilos con promedio < u, evaluar cada versión "
@@ -212,6 +216,14 @@ def main():
         dist = dmin[np.arange(N), haz]
         asignado = dist < a.mdf
         criterio = f"MDF < {a.mdf} mm"
+    elif a.etiqueta == "hausdorff":
+        H = pd.read_csv(a.hausdorff).sort_values("hilo")
+        if len(H) != N or not (H.hilo.values == np.arange(N)).all():
+            raise SystemExit(f"ERROR: {a.hausdorff} no tiene una fila por hilo (0..{N - 1}).")
+        asignado = H.hd_min.values < a.eps_hd       # NaN (> 10 mm) < eps es False
+        haz = dmin.argmin(axis=1)                   # haz para las métricas por conducto: el del MDF más cercano
+        dist = dmin[np.arange(N), haz]
+        criterio = f"Hausdorff < {a.eps_hd:g} mm"
     else:
         from scipy.ndimage import binary_dilation
         inicio = np.concatenate([[0], np.cumsum(npts)[:-1]])
