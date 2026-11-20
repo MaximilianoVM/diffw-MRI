@@ -2,7 +2,7 @@
 
 **Qué es:** para cada uno de los 100 000 hilos de `data/tracks_100k.tck`, la distancia de Hausdorff al hilo más parecido del ground truth (189 985 hilos en `data/GT/all_tracks.tck`). Con eso se decide qué hilos "tienen correspondencia con el GT" (`hd_min < ε`). Es la pregunta 1 de la junta del 17 nov (`docs/junta_17nov.md`).
 
-**Por qué se reparte:** el cálculo directo de las notas (cada hilo contra todo el GT) tarda ≈ 3 días por 10 000 hilos. El script `scripts/hausdorff_bloque.py` descarta primero los hilos del GT que no pasan cerca y mide solo a los candidatos: **≈ 0.1 s por hilo**, es decir ≈ 25 min por bloque de 14 286 hilos y ≈ 3 h si una sola computadora hiciera todo. Se reparte igual, porque así se termina en media hora.
+**Por qué se reparte:** el cálculo directo de las notas (cada hilo contra todo el GT) tarda ≈ 3 días por 10 000 hilos. El script `scripts/hausdorff_bloque.py` descarta primero los hilos del GT que no pasan cerca y mide solo a los candidatos: **≈ 0.1 s por hilo**, es decir ≈ 35 min por bloque de 14 286 hilos y ≈ 3 h si una sola computadora hiciera todo. Se reparte igual, porque así se termina en media hora.
 
 ## 1. Qué necesita cada computadora
 
@@ -17,13 +17,13 @@ Los hilos se dividen en 7 bloques consecutivos (un bloque por computadora):
 
 | Bloque | Hilos | Computadora |
 |---|---|---|
-| 1 | 0 – 14 285 | por asignar |
-| 2 | 14 286 – 28 571 | por asignar |
-| 3 | 28 572 – 42 857 | por asignar |
-| 4 | 42 858 – 57 143 | por asignar |
-| 5 | 57 144 – 71 429 | por asignar |
-| 6 | 71 430 – 85 715 | por asignar |
-| 7 | 85 716 – 99 999 | por asignar |
+| 1 | 0 – 14 285 | Max |
+| 2 | 14 286 – 28 571 | Andrea |
+| 3 | 28 572 – 42 857 | Jacqueline |
+| 4 | 42 858 – 57 143 | Mario |
+| 5 | 57 144 – 71 429 | Pablo |
+| 6 | 71 430 – 85 715 | Richie |
+| 7 | 85 716 – 99 999 | Sarai |
 
 Con otro número de computadoras se usa el mismo comando con otra `N` (por ejemplo `3 10` para bloques de 10 000, como en las notas). Todas deben usar **la misma `N`**.
 
@@ -32,9 +32,9 @@ Con otro número de computadoras se usa el mismo comando con otra `N` (por ejemp
 Desde la raíz del proyecto, con el entorno activado (el ejemplo es el bloque 3 de 7):
 
 ```bash
-bash scripts/08_hausdorff.sh 3 7
+bash scripts/08_hausdorff.sh 3 6
 ```
-Remuestrea el GT y el bloque cada 2 mm, calcula las distancias y guarda `out/hausdorff/bloque_3_de_7.csv` (columnas `hilo, hd_min, hd_dir_min, gt_hilo`). Tarda ≈ 25 min.
+Remuestrea el GT y el bloque cada 2 mm, calcula las distancias y guarda `out/hausdorff/bloque_3_de_7.csv` (columnas `hilo, hd_min, hd_dir_min, gt_hilo`). Tarda ≈ 35 min.
 
 **Se espera:** al final imprime algo como `guardado out/hausdorff/bloque_3_de_7.csv | con correspondencia < 10 mm: 58 %`. En una prueba con 300 hilos del bloque 1 fue 58 %. El archivo pesa < 1 MB: se manda por WhatsApp o Drive a quien junta.
 
@@ -70,3 +70,6 @@ Se guardan **distancias**, no 0/1: el umbral `ε` se decide después (`hd_min < 
 - **Poda exacta:** si `d_H(y, g) < ε`, cada punto de `y` está a menos de ε de `g`. Se toman 3 puntos de `y` (inicio, medio y fin) y solo se miden los hilos del GT que tienen un punto cerca de los tres. No pierde ningún hilo con distancia menor que `--eps-max` (10 mm).
 - **Verificación:** contra la fuerza bruta (todos los pares) sobre 100 hilos y 3 000 hilos del GT, la diferencia máxima fue 0.05 mm y no se perdió ninguno.
 - **Hausdorff simétrico** (`hd_min`): el máximo de las dos distancias dirigidas. Si un hilo del tractograma es solo un tramo de un haz largo, `hd_min` lo castiga; `hd_dir_min` no.
+
+## Paquete para compañeros sin Git
+`entrega/hausdorff_<Nombre>_bloque<k>.zip` (k = 1…7, ≈ 14 MB c/u; no se sube a Git): contiene solo los hilos de ese bloque, el script y `correr.sh`. La persona solo copia el GT (`all_tracks.tck`) a la carpeta y corre `bash correr.sh`. Se generaron con `hausdorff_bloque.py --tck=bloque<k>.tck --offset=<primer hilo>`; el resultado es idéntico al del modo normal (verificado con 200 hilos).

@@ -165,7 +165,7 @@ Corre lo anterior si faltan los pesos, verifica el `md5`, el número de pesos (1
 Distancia de cada hilo de `data/tracks_100k.tck` al ground truth (`data/GT/all_tracks.tck`); sirve para decir qué hilos "corresponden al GT" (junta del 17 nov). Se reparte en bloques entre computadoras; instrucciones completas en `docs/hausdorff_instrucciones.md`.
 
 ```bash
-bash scripts/08_hausdorff.sh 3 7      # esta computadora hace el bloque 3 de 7 (≈ 25 min) -> out/hausdorff/bloque_3_de_7.csv
+bash scripts/08_hausdorff.sh 3 7      # esta computadora hace el bloque 3 de 7 (≈ 35 min) -> out/hausdorff/bloque_3_de_7.csv
 bash scripts/08_hausdorff.sh unir     # junta los 7 bloques -> out/hausdorff/hausdorff.csv
 ```
 **Se espera:** 100 000 filas con `hilo, hd_min, hd_dir_min, gt_hilo`; en una prueba con 300 hilos, el 58 % tuvo un hilo del GT a menos de 10 mm.

@@ -35,7 +35,7 @@ TCK, GT, SAL = "data/tracks_100k.tck", "data/GT/all_tracks.tck", "out/hausdorff"
 opc = {a.split("=")[0]: a.split("=")[1] for a in sys.argv[1:] if a.startswith("--") and "=" in a}
 pos = [a for a in sys.argv[1:] if not a.startswith("--")]
 EPS_MAX, PASO = float(opc.get("--eps-max", 10)), float(opc.get("--paso", 2))
-GT = opc.get("--gt", GT)
+GT = opc.get("--gt", GT)  # en el paquete: --gt=all_tracks.tck --tck=bloque.tck --offset=<primer hilo>
 
 if "--unir" in sys.argv:
     fs = sorted(glob.glob(f"{SAL}/bloque_*.csv"))
@@ -77,7 +77,12 @@ gt_de_punto = np.repeat(np.arange(len(GO) - 1, dtype=np.int32), np.diff(GO))
 arbol = cKDTree(GP)
 print(f"GT: {len(GO) - 1} hilos, {len(GP)} puntos, listo en {time.time() - t0:.0f} s")
 
-Y = nib.streamlines.load(TCK).streamlines[ini:fin]
+if "--tck" in opc:  # modo "paquete": el tractograma ya es solo el bloque; --offset = índice global de su primer hilo
+    Y = nib.streamlines.load(opc["--tck"]).streamlines[:int(opc.get("--n", 10**9))]
+    ini = int(opc.get("--offset", 0))
+    fin = ini + len(Y)
+else:
+    Y = nib.streamlines.load(TCK).streamlines[ini:fin]
 YP, YO = remuestrea(Y, PASO)
 filas = []
 for i in range(fin - ini):
