@@ -19,6 +19,7 @@ docs/
   diagramas.md          flujo de datos y fases del proyecto
   filtrado_pesos.md     paso 9: normalizar (entre el máximo) y filtrar con ε
   evaluacion_filtrado.md  paso 10: precisión/recall/AUC de cada método vs Hausdorff
+  resumen_para_la_junta.md  estado completo del proyecto, fácil de leer (para la junta)
   siguiente_mac_normalizacion.md  tarea para la Mac: normalización de Ricardo y modelo vs Hausdorff
   conclusiones.md       qué sabemos hasta ahora
   explicacion_commit.md qué hace COMMIT y cómo se lee la matriz 84 x 84

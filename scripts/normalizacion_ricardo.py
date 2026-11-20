@@ -130,6 +130,9 @@ def main():
     ap.add_argument("--umbrales", type=float, nargs="+",
                     help="modo umbrales fijos: por cada u, eliminar los hilos con promedio < u, evaluar cada versión "
                          "contra el GT con todas las métricas y ordenarlas (p. ej. --umbrales 0.1 0.2 0.3 0.4 0.5)")
+    ap.add_argument("--mismos-n", type=int, nargs="+", metavar="N",
+                    help="comparar cada 'método' (puntaje) conservando sus N hilos de mayor valor (p. ej. --mismos-n 10000 25000 50000) "
+                         "contra el GT con todas las métricas; incluye 'sin filtrar'. No combina los puntajes.")
     ap.add_argument("--por-longitud", type=int, default=0, metavar="N",
                     help="percentil dentro de N rangos de longitud (cuantiles), en vez de contra todos los hilos "
                          "(p. ej. --por-longitud 10 = deciles). 0 = percentil global (especificación original)")
@@ -289,6 +292,27 @@ def main():
             R[f"lugar_{c}"] = lugares[c].values
         R["lugar_promedio"] = lugares.mean(axis=1).values
         return R.sort_values("lugar_promedio")
+
+    # ---- modo mismos-n: cada puntaje conserva sus N hilos de mayor valor (comparación justa entre puntajes)
+    if a.mismos_n:
+        filas, tablas = [], []
+        for n in a.mismos_n:
+            for m, w in pesos.items():
+                orden = np.lexsort((rng.random(N), -w))
+                k = np.zeros(N, bool)
+                k[orden[:n]] = True
+                df, res = evaluar(f"{m}", k, con_mdf=False)
+                filas.append({"n": n, **res}); tablas.append(df.assign(n=n))
+        df, res = evaluar("sin filtrar", np.ones(N, bool), con_mdf=False)
+        filas.append({"n": N, **res}); tablas.append(df.assign(n=N))
+        R = pd.DataFrame(filas)
+        R.to_csv(f"{a.salida}/comparacion_mismos_n.csv", index=False)
+        pd.concat(tablas).to_csv(f"{a.salida}/comparacion_mismos_n_por_conducto.csv", index=False)
+        pd.set_option("display.width", 220)
+        print("\n" + R[["n", "metodo", "hilos_conservados", "conductos_detectados", "pct_fibras_falsas",
+                        "cobertura", "desborde", "dice"]].round(3).to_string(index=False))
+        print(f"guardado en {a.salida}/")
+        return
 
     # ---- modo umbrales fijos: una versión del tractograma por umbral, todas contra el GT
     if a.umbrales:

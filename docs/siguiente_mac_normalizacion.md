@@ -57,6 +57,37 @@ Reporta, para cada una: AUC, precisión/recall/lift al conservar los n = 10 000,
 `docs/resultados/modelo_y_normalizacion_hausdorff.md` (tablas + una lectura de 5 líneas). Scripts nuevos con número libre (`11_modelo.sh` + `.py`).
 Sube solo código, `.md` y tablas pequeñas (CSV < 5 MB). No renombres ni muevas nada existente. Avisa con el hash del commit.
 
+### 3.4 Comparar el tractograma filtrado por el modelo contra el GT (último tramo del paso D) — **TAREA PENDIENTE PARA LA MAC**
+Hasta aquí todo se midió **hilo por hilo** (precisión, AUC). La junta pide además comparar **el tractograma filtrado como un todo** contra el GT:
+¿qué haces (de 21) se recuperan, con qué solape (Dice por haz) y cuántos hilos falsos quedan? Es el resultado más fácil de mostrar al doctor.
+Se intentó en la laptop de desarrollo (4 núcleos, ≈ 3 GB de RAM libres) y se **detuvo a los ~4 min**, todavía en la asignación de hilos a haces; **no hay ningún resultado**. Se prepararon dos piezas, descritas abajo.
+
+**Estado de las piezas (léelo antes de usarlas):**
+- `scripts/puntajes_candidatos.py` — **probado, funciona (≈ 1 min).** Genera en `out/modelo/puntaje_<nombre>.txt` un puntaje por hilo para: `MODELO_3metodos`
+  (SIFT2+LiFE+COMMIT, percentil, sin longitud), `MODELO_4metodos` y `MODELO_4metodos_mas_longitud` (log del peso), `MIN_percentil_LiFE_COMMIT2`, `PROMEDIO_percentil_LiFE_COMMIT2`.
+  Los modelos se puntúan con validación cruzada de 2 pliegues (cada hilo lo puntúa un modelo que no lo vio; misma separación 50/50, semilla 0 que `modelo.py`).
+- `scripts/normalizacion_ricardo.py --mismos-n N1 N2 …` — **opción nueva SIN PROBAR de punta a punta** (solo se comprobó que el archivo compila). Cada «método» pasado en `--pesos`
+  conserva sus N hilos de mayor valor y se evalúa contra el GT (hilos conservados, haces detectados, % falsos, cobertura, desborde, Dice por haz) más la fila «sin filtrar».
+  No combina los puntajes entre sí. Salidas: `<salida>/comparacion_mismos_n.csv` y `comparacion_mismos_n_por_conducto.csv`. Si falla o parece incorrecta, corrígela o reescríbela.
+
+**Qué hacer, en orden:**
+1. `git pull`; `python scripts/puntajes_candidatos.py 5` (genera los 5 puntajes).
+2. Correr (la asignación MDF a los 21 haces se hace una vez y queda en caché en `out/normalizacion/asignacion_mdf_*.npz`):
+   ```
+   python scripts/normalizacion_ricardo.py --etiqueta hausdorff --eps-hd 5 --mismos-n 10000 25000 50000 \
+     --salida out/normalizacion/tractograma_hausdorff --pesos \
+     MODELO_3metodos=out/modelo/puntaje_MODELO_3metodos.txt MODELO_4metodos=out/modelo/puntaje_MODELO_4metodos.txt \
+     MODELO_4metodos_mas_longitud=out/modelo/puntaje_MODELO_4metodos_mas_longitud.txt \
+     MIN_LiFE_COMMIT2=out/modelo/puntaje_MIN_percentil_LiFE_COMMIT2.txt PROM_LiFE_COMMIT2=out/modelo/puntaje_PROMEDIO_percentil_LiFE_COMMIT2.txt \
+     SIFT2=out/pesos_sift2.txt COMMIT=out/commit/pesos_commit.txt LiFE=out/life/pesos_life.txt COMMIT2=out/commit2/pesos_commit2.txt LONGITUD=out/longitudes.txt
+   ```
+   (`LONGITUD` = «me quedo con los hilos largos», referencia obligatoria; `sin filtrar` sale solo.)
+3. **Verificar la herramienta antes de fiarse:** la fila `sin filtrar` debe dar los 100 000 hilos y los mismos haces detectados / % de falsos que el tractograma completo ya reportado
+   en `docs/resultados/modelo_y_normalizacion_hausdorff.md` (66.7 % de falsos con MDF; con Hausdorff 5 mm debe ser 66.7 %: 1 − 0.333).
+4. **Reportar** en `docs/resultados/tractograma_modelo_vs_gt.md`: una tabla por n (10 000 / 25 000 / 50 000) con todas las filas, el Dice por haz de las 3 mejores
+   (qué haces se pierden), y una lectura de 5 líneas que diga **si esta evaluación contradice a la de por hilo** (p. ej. un puntaje con buena precisión pero que pierde haces enteros).
+5. Mismas reglas de la sección 3.3 (no renombrar ni mover nada; solo código, `.md` y tablas < 5 MB; avisar con el hash del commit).
+
 ## 4. Advertencias
 - Los vectores de COMMIT y COMMIT2 se asumen en el orden de `tracks_100k.tck` (solo se verificó el tamaño). Si el AUC de COMMIT sale ≈ 0.5 exacto, sospechar orden.
 - ε de Hausdorff = 5 mm es propuesta; repetir con 3 y 7 mm para ver si las conclusiones cambian.
