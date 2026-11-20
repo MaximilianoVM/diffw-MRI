@@ -23,6 +23,7 @@
 
 - Resultados nuevos van a `docs/resultados/` (un archivo por tema); no más `.md` sueltos en la raíz.
 - Comandos reproducibles van a `pipeline.md`. Reglas de trabajo en `docs/guia_equipo.md`.
+- Cualquiera puede actualizar cualquier archivo del proyecto (documentos, estado, scripts), aunque lo haya escrito otra persona, para que todo quede al día; se avisa en el mensaje del commit.
 - Los pesos de cada método siguen el contrato de `docs/guia_equipo.md` (100 000 números ≥ 0 en el orden de `data/tracks_100k.tck`).
 - `data/` y `out/` no se suben a Git (salvo `out/equipos/life_100k/`, que ya estaba subido). No hagas commit ni push sin que el usuario lo pida.
 

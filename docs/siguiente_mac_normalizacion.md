@@ -55,7 +55,7 @@ Reporta, para cada una: AUC, precisión/recall/lift al conservar los n = 10 000,
 
 ### 3.3 Dónde dejar resultados
 `docs/resultados/modelo_y_normalizacion_hausdorff.md` (tablas + una lectura de 5 líneas). Scripts nuevos con número libre (`11_modelo.sh` + `.py`).
-Sube solo código, `.md` y tablas pequeñas (CSV < 5 MB). No renombres ni muevas nada existente. Avisa con el hash del commit.
+Sube solo código, `.md` y tablas pequeñas (CSV < 5 MB). Se puede actualizar cualquier documento o script existente, sea de quien sea, para que todo quede al día. Avisa con el hash del commit.
 
 ### 3.4 Comparar el tractograma filtrado por el modelo contra el GT (último tramo del paso D) — **TAREA PENDIENTE PARA LA MAC**
 Hasta aquí todo se midió **hilo por hilo** (precisión, AUC). La junta pide además comparar **el tractograma filtrado como un todo** contra el GT:
@@ -86,7 +86,7 @@ Se intentó en la laptop de desarrollo (4 núcleos, ≈ 3 GB de RAM libres) y se
    en `docs/resultados/modelo_y_normalizacion_hausdorff.md` (66.7 % de falsos con MDF; con Hausdorff 5 mm debe ser 66.7 %: 1 − 0.333).
 4. **Reportar** en `docs/resultados/tractograma_modelo_vs_gt.md`: una tabla por n (10 000 / 25 000 / 50 000) con todas las filas, el Dice por haz de las 3 mejores
    (qué haces se pierden), y una lectura de 5 líneas que diga **si esta evaluación contradice a la de por hilo** (p. ej. un puntaje con buena precisión pero que pierde haces enteros).
-5. Mismas reglas de la sección 3.3 (no renombrar ni mover nada; solo código, `.md` y tablas < 5 MB; avisar con el hash del commit).
+5. Mismas reglas de la sección 3.3 (se puede actualizar cualquier archivo existente; solo código, `.md` y tablas < 5 MB; avisar con el hash del commit).
 
 ## 4. Advertencias
 - Los vectores de COMMIT y COMMIT2 se asumen en el orden de `tracks_100k.tck` (solo se verificó el tamaño). Si el AUC de COMMIT sale ≈ 0.5 exacto, sospechar orden.
