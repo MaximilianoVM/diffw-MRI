@@ -5,6 +5,10 @@ data/*
 out/*
 # pero sí se suben los vectores de pesos (100 000 números, ~1 MB c/u): son el entregable de cada método
 !out/pesos_sift2.txt
+!out/longitudes.txt
+!out/modelos/
+out/modelos/*
+!out/modelos/tabla_hilos.csv
 !out/commit/
 out/commit/*
 !out/commit/pesos_commit.txt

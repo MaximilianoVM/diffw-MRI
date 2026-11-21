@@ -137,8 +137,10 @@ COMMIT2 apaga por completo BPS, Fornix e ICP. El modelo de 4 métodos, aun sin l
 ICP además es corto (≈ 60 mm), y por eso los puntajes con longitud lo descartan.
 
 ## 3. Qué falta / advertencias
-- Revisar con Sarahi la configuración de COMMIT2 (λ = 1e-2): un λ menor podría no apagar BPS, Fornix e ICP. Ya estaba pendiente porque su
-  corrida y la nuestra difieren en el número de pesos distintos de cero (62 779 contra 36 928).
+- **COMMIT2 aquí es solo λ = 1e-2.** Ya existe un barrido de λ (1e-4, 1e-3, 5e-3, 1e-2) en `docs/resultados/commit2.md`, evaluado con la etiqueta MDF: con λ = 1e-3
+  conserva los 21 haces con 31 % de falsos, y con λ = 1e-4 también los 21 (42 %). **Falta repetir esa comparación con la etiqueta de Hausdorff y a igual número de hilos**
+  (sección 3.5 de `docs/siguiente_mac_normalizacion.md`): puede cambiar la recomendación, porque el problema de BPS/Fornix/ICP viene de λ = 1e-2.
+- La diferencia en pesos distintos de cero con la corrida original de COMMIT2 (62 779 contra 36 928) está documentada en `docs/resultados/commit2.md`; no depende de nadie más.
 - Dice y cobertura solo cuentan los hilos verdaderos: un método con 85 % de falsos puede tener buen Dice (COMMIT con 10 000). Hay que leerlos
   siempre junto al % de falsos.
 - CP tiene 1 solo hilo verdadero en todo el tractograma: no se puede recuperar con ningún filtro.

@@ -12,7 +12,7 @@ environment.yml     entorno conda (WSL/Linux): MRtrix + COMMIT
 requirements.txt    versiones exactas de Python (venv, macOS)
 data/               entrada y tracks_100k.tck (no se sube; ver data/README.md)
 out/                todo lo generado (COMMIT en out/commit/); no se sube
-scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar  11_modelo
+scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar  crear_tabla_modelos  11_modelo
                     + los .py de apoyo (correr_*, comparar_*, evaluar_pesos, normalizacion_ricardo...)
 docs/
   junta_17nov.md        objetivo según el investigador
@@ -20,6 +20,7 @@ docs/
   filtrado_pesos.md     paso 9: normalizar (entre el máximo) y filtrar con ε
   evaluacion_filtrado.md  paso 10: precisión/recall/AUC de cada método vs Hausdorff
   resumen_para_la_junta.md  estado completo del proyecto, fácil de leer (para la junta)
+  para_continuar_modelos.md  guía para quien continúa con los modelos (incluye la tabla de datos)
   siguiente_mac_normalizacion.md  tarea para la Mac: normalización de Ricardo y modelo vs Hausdorff
   conclusiones.md       qué sabemos hasta ahora
   explicacion_commit.md qué hace COMMIT y cómo se lee la matriz 84 x 84

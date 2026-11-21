@@ -36,7 +36,7 @@ Detalle: `docs/junta_17nov.md`. Simplificando:
 | GT | 189 985 hilos, 21 haces | `data/GT/all_tracks.tck` |
 | SIFT2 | pesos entre 0.19 y 3.7, ninguno es cero | `out/pesos_sift2.txt` |
 | COMMIT | 44.8 % de los pesos son cero | `out/commit/pesos_commit.txt` |
-| LiFE | 25.4 % de los pesos son cero (entrega de Andrea y su equipo sobre este mismo tractograma) | `out/equipos/life_100k/life_weights.txt` |
+| LiFE | 25.4 % de los pesos son cero (entrega del equipo de LiFE sobre este mismo tractograma) | `out/equipos/life_100k/life_weights.txt` |
 | COMMIT2 (extra) | 63.1 % de ceros (group lasso, λ = 1e-2) | `out/commit2/pesos_commit2.txt` |
 
 Regla que cumplen todos: **100 000 pesos ≥ 0, sin NaN, en el orden de `tracks_100k.tck`**. Un peso cero significa «el método eliminó ese hilo».
@@ -66,7 +66,7 @@ Detalle: `docs/hausdorff_instrucciones.md`, `docs/hausdorff_eficiencia.md`, `doc
 
 **Qué es.** La distancia de Hausdorff mide qué tan parecidas son dos trayectorias *de punta a punta*: es el peor desajuste entre ellas. Para cada hilo buscamos el hilo del GT más parecido y guardamos esa distancia en mm (`hd_min`). Un hilo **corresponde al GT** si `hd_min < ε`.
 
-**Quién lo hizo.** Se repartió en 7 bloques de ~14 286 hilos, uno por persona (Max, Andrea, Jacqueline, Mario, Pablo, Richie, Sarai). Los 7 resultados se unieron en `out/hausdorff/hausdorff.csv` (100 000 filas). Todos los bloques dieron porcentajes casi idénticos (33 ± 0.5 % a 5 mm), lo que indica que todos usaron los mismos archivos.
+**Quién lo hizo.** Se repartió en 7 bloques de ~14 286 hilos, uno por integrante del equipo (7 personas). Los 7 resultados se unieron en `out/hausdorff/hausdorff.csv` (100 000 filas). Todos los bloques dieron porcentajes casi idénticos (33 ± 0.5 % a 5 mm), lo que indica que todos usaron los mismos archivos.
 
 **Resultado:**
 | ε (mm) | Hilos que corresponden al GT |
@@ -188,7 +188,7 @@ Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el
 - **El modelo con longitud es el que más haces pierde** (7 de 21 con 10 000 hilos): se queda con hilos largos y abandona los haces cortos, como ICP (≈ 60 mm).
 - **No hay un ganador en las dos cosas.** Si se prioriza un tractograma limpio: mínimo LiFE + COMMIT2 (46.8 % de falsos, 14 haces). Si se prioriza no perder haces: el modelo de los 3 métodos del doctor (15 haces, 57.4 %) o LiFE solo (17 haces, 58.9 %), ambos mejores que no filtrar. COMMIT cubre 20 haces, pero con más falsos que no filtrar.
 - **Con 50 000 hilos casi todos recuperan 20 haces** y el % de falsos de los mejores sube a 54–59 %: a ese tamaño el filtro ayuda poco.
-- **Pendiente:** COMMIT2 se corrió con λ = 1e-2. Con un λ menor quizá no apague BPS, Fornix e ICP. Hay que revisarlo con Sarahi (su corrida y la nuestra ya diferían en el número de pesos distintos de cero: 62 779 contra 36 928).
+- **Pendiente (con λ ya explorado):** el COMMIT2 de esta sección usa λ = 1e-2, el que más conexiones apaga. El barrido anterior (`docs/resultados/commit2.md`, etiqueta MDF) mostró que con **λ = 1e-3 se conservan los 21 haces** (31 % de falsos) y con λ = 1e-4 también (42 %). Falta repetir esta comparación con Hausdorff y a igual número de hilos; podría cambiar la recomendación.
 
 ---
 
@@ -203,7 +203,7 @@ Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el
 
 **Qué falta, en orden:**
 1. **Decidir con el doctor qué se prioriza:** un tractograma limpio (pocos falsos, pero se pierden BPS, Fornix e ICP) o no perder haces (más falsos). La sección 9 tiene las dos opciones.
-2. **Revisar COMMIT2 con Sarahi:** con un λ menor quizá no apague BPS, Fornix e ICP, y eso cambiaría la recomendación.
+2. **Repetir la comparación del tractograma con COMMIT2 de λ = 1e-3 y 1e-4** (ya existen sus pesos de un barrido anterior): con esos λ se conservaban los 21 haces, y eso podría cambiar la recomendación.
 3. Fijar el ε final (de Hausdorff y de los pesos) con el doctor.
 4. Redactar el informe.
 
@@ -220,7 +220,7 @@ Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el
 
 **«¿Qué tractograma filtrado recomiendan?»** Depende de qué se priorice. Para un tractograma limpio, el mínimo de LiFE + COMMIT2 (con 25 000 hilos: 46.8 % de falsos contra 66.7 % sin filtrar), avisando que pierde BPS, Fornix e ICP. Para no perder haces, el modelo de los 3 métodos del doctor o LiFE solo (15–17 de 21 haces, ≈ 58 % de falsos).
 
-**«¿Por qué se pierden BPS, Fornix e ICP?»** Porque COMMIT2 les pone peso 0 a casi todos sus hilos verdaderos (99.7–100 %): su regularización apaga conexiones completas. Cualquier combinación con COMMIT2 hereda esa pérdida. Lo vamos a revisar con otro λ.
+**«¿Por qué se pierden BPS, Fornix e ICP?»** Porque COMMIT2 les pone peso 0 a casi todos sus hilos verdaderos (99.7–100 %): su regularización apaga conexiones completas. Cualquier combinación con COMMIT2 hereda esa pérdida. Eso es con λ = 1e-2; con λ = 1e-3 y 1e-4 el barrido anterior conservaba los 21 haces y falta evaluarlos con Hausdorff.
 
 **«¿El modelo no está haciendo trampa con la etiqueta?»** Se entrena con la mitad de los hilos y se evalúa en la otra mitad; los AUC de entrenamiento y prueba difieren < 0.01. Falta además validar en otro conjunto (otro fantoma o tractograma).
 
@@ -239,7 +239,7 @@ Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el
 - La regresión logística es lineal; un modelo no lineal podría extraer más, sobre todo de la interacción peso × longitud.
 - El orden de los vectores de COMMIT y COMMIT2 se verificó solo por tamaño.
 - El Dice por haz solo cuenta los hilos verdaderos: un método con 85 % de falsos puede tener buen Dice. Hay que leerlo siempre junto al % de falsos.
-- COMMIT2 se corrió con un solo λ (1e-2), y es el que apaga BPS, Fornix e ICP.
+- En la comparación de tractogramas, COMMIT2 entra solo con λ = 1e-2 (el que apaga BPS, Fornix e ICP). Otros λ existen pero aún no se han evaluado con Hausdorff.
 - Los pesos de SIFT2 del equipo de SIFT2 (máx 3.7069) difieren un poco de los nuestros (máx 3.7022): usamos los nuestros.
 - Los porcentajes de hilos falsos de la normalización vieja (con otra etiqueta) **no** son comparables con los de ahora.
 

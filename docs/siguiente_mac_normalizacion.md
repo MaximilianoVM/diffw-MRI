@@ -88,6 +88,17 @@ Se intentó en la laptop de desarrollo (4 núcleos, ≈ 3 GB de RAM libres) y se
    (qué haces se pierden), y una lectura de 5 líneas que diga **si esta evaluación contradice a la de por hilo** (p. ej. un puntaje con buena precisión pero que pierde haces enteros).
 5. Mismas reglas de la sección 3.3 (se puede actualizar cualquier archivo existente; solo código, `.md` y tablas < 5 MB; avisar con el hash del commit).
 
+### 3.5 COMMIT2 con otros λ en la comparación del tractograma — **TAREA PENDIENTE PARA LA MAC**
+La sección 3.4 mostró que COMMIT2 con λ = 1e-2 apaga por completo BPS, Fornix e ICP, y que todo puntaje que dependa de él pierde esos haces.
+Pero el barrido de λ anterior (`docs/resultados/commit2.md`, etiqueta MDF) decía que con **λ = 1e-3 se conservan los 21 haces** (31 % de falsos) y con λ = 1e-4 también (42 %).
+Esa comparación usó otra etiqueta y no fue a igual número de hilos. Hay que repetirla con Hausdorff y `--mismos-n`.
+1. Los pesos están en `out/commit2_lam1e-3/pesos_commit2.txt`, `out/commit2_lam1e-4/…` y `out/commit2_lam5e-3/…` (solo en la Mac; verifica que existan y que tengan 100 000 valores).
+2. Corre `scripts/normalizacion_ricardo.py --etiqueta hausdorff --eps-hd 5 --mismos-n 10000 25000 50000` con, además de las referencias de 3.4, los puntajes `COMMIT2_1e-3`, `COMMIT2_1e-4`, `COMMIT2_5e-3`
+   **y** los mínimos de percentiles de LiFE con cada uno (ver cómo lo hace `scripts/puntajes_candidatos.py` para λ = 1e-2). Opcional: el modelo de 4 métodos reentrenado con COMMIT2 de λ = 1e-3.
+3. Reportar en `docs/resultados/tractograma_modelo_vs_gt.md` (nueva sección) la misma tabla por n, con el **Dice por haz de BPS, Fornix e ICP**: ¿los recupera con λ menor, y a qué costo en % de falsos?
+4. Decir si cambia la recomendación del resumen (`docs/resumen_para_la_junta.md`, secciones 9–10) y actualizarlo tú mismo.
+5. Nota: la diferencia con la corrida original de COMMIT2 (62 779 contra 36 928 hilos con peso > 0) ya está documentada en `commit2.md`; no hace falta preguntarle a nadie.
+
 ## 4. Advertencias
 - Los vectores de COMMIT y COMMIT2 se asumen en el orden de `tracks_100k.tck` (solo se verificó el tamaño). Si el AUC de COMMIT sale ≈ 0.5 exacto, sospechar orden.
 - ε de Hausdorff = 5 mm es propuesta; repetir con 3 y 7 mm para ver si las conclusiones cambian.
