@@ -1,5 +1,5 @@
 # Versiones exactas probadas en macOS 27.2 (Apple Silicon), Python 3.13, el 9 nov 2026.
-# Instalar con:  bash scripts/instalar_python.sh
+# Instalar con:  pip install -r requirements.txt   (MRtrix3 3.0.8 se instala aparte)
 numpy==2.5.4
 scipy==1.18.1
 nibabel==5.5.0

@@ -22,7 +22,7 @@ docs/
   evaluacion_filtrado.md  paso 10: precisión/recall/AUC de cada método vs Hausdorff
   resumen_para_la_junta.md  estado completo del proyecto, fácil de leer (para la junta)
   para_continuar_modelos.md  guía para quien continúa con los modelos (incluye la tabla de datos)
-  siguiente_mac_normalizacion.md  tareas para la Mac (3.5: COMMIT2 con otros λ; 3.6: haces con los modelos del grupo; 3.7: actualizar el reporte LaTeX)
+  siguiente_mac_normalizacion.md  tareas para la Mac (3.5: COMMIT2 con otros λ; 3.6: haces con los modelos del grupo; 3.7: actualizar el reporte LaTeX; 3.8: compilarlo y revisar formato)
   conclusiones.md       qué sabemos hasta ahora
   explicacion_commit.md qué hace COMMIT y cómo se lee la matriz 84 x 84
   guia_equipo.md        reglas de trabajo y contrato de pesos

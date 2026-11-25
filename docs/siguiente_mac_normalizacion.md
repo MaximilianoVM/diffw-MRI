@@ -166,6 +166,25 @@ Cambios, por sección (los números de línea son aproximados):
 - No cambies autores, título ni formato; solo contenido. Si una cifra no está en los documentos, no la inventes: marca `\textbf{[FALTA]}` y avísame.
 - Commit aparte, solo con el reporte: «reporte: resultados con Hausdorff, modelos y haces».
 
+### 3.8 Compilar y revisar el reporte después de las correcciones — **TAREA PENDIENTE PARA LA MAC**
+Después de tu commit `b9d8db1`, en la laptop de desarrollo se corrigió `Proyecto2_Laboratorio/main.tex` (haz `git pull` antes de tocarlo):
+- **Resumen** sin mezclar etiquetas (todo con Hausdorff); **las dos logísticas distinguidas** («mismas entradas que los árboles», 0.688/0.699, y «del paso 11», 0.683/0.701) en metodología y tablas.
+- **Nivel de hilo** pasado a Hausdorff: figura `fig:auc` con dos series (Hausdorff y MDF), AUC por deciles de longitud y tabla nueva `tab:mismon-haus`.
+- Secciones de **λ** y **combinación por percentiles** rotuladas «(etiqueta MDF)», con etiquetas `sec:res-mdf-ini` / `sec:res-mdf-fin`; resultados de Hausdorff en la sección de la etiqueta; discusión, estado (B = hecho), pendientes y conclusiones actualizados; comentarios pendientes borrados; `.gitignore` propio en la carpeta.
+- **Apéndice de reproducibilidad reescrito**: enlace al repo, MD5, «el tractograma no se regenera», dos niveles de reproducción, tabla de scripts con 17 filas y columna de tiempo, semillas y números de control.
+- En el repo: `environment.yml` ahora incluye `dipy==1.12.1` y `matplotlib==3.11.2`; `requirements.txt` ya no apunta a un script inexistente.
+
+Antes del apéndice, el documento se compiló limpio (15 páginas, sin referencias rotas). **El apéndice nuevo no se ha compilado.** Pide:
+1. Compilar (`pdflatex main.tex` dos veces, dentro de `Proyecto2_Laboratorio/`) y confirmar que no hay errores ni `??` (referencias o citas rotas).
+2. Revisar en el PDF, sobre todo:
+   - la tabla `tab:scripts` (4 columnas, descripciones largas): que quepa en el ancho; si se desborda, acorta descripciones, usa `\footnotesize` o quita la columna «Objetivo», sin perder filas;
+   - que `-{}-mismos-n` se vea como dos guiones y no como una raya;
+   - la figura `fig:auc`: que la leyenda no tape barras ni etiquetas;
+   - las líneas demasiado anchas («Overfull \hbox» en el `.log`): ya había una de 56 pt en la portada (líneas ≈ 85–86) y una de 6 pt en la figura de flujo; corrige las que se vean en el PDF.
+3. Si puedes, mide los tiempos que faltan en `tab:scripts` (preproceso, tractografía, matrices, LiFE): ahora dicen «minutos» o «---». Si no los mides, déjalos así; no los inventes.
+4. Opcional: comprobar que `conda env create -f environment.yml` funciona con las dos librerías nuevas.
+5. No cambies contenido, autores ni título; solo forma. No subas el PDF ni los auxiliares. Commit aparte: «reporte: compilado y ajustes de formato».
+
 ## 4. Advertencias
 - Los vectores de COMMIT y COMMIT2 se asumen en el orden de `tracks_100k.tck` (solo se verificó el tamaño). Si el AUC de COMMIT sale ≈ 0.5 exacto, sospechar orden.
 - ε de Hausdorff = 5 mm es propuesta; repetir con 3 y 7 mm para ver si las conclusiones cambian.
