@@ -9,6 +9,7 @@ out/*
 !out/modelos/
 out/modelos/*
 !out/modelos/tabla_hilos.csv
+!out/modelos/haz_por_hilo.csv
 !out/commit/
 out/commit/*
 !out/commit/pesos_commit.txt

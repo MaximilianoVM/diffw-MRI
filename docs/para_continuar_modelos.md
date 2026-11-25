@@ -64,6 +64,9 @@ Dos medidas, ambas sobre los hilos de la mitad **`prueba`** (nunca entrenes con 
 | **logística, 4 métodos** (el ejemplo) | **0.683** | 45.5 % | 50.2 % | 45.9 % |
 | logística, 4 métodos + longitud | 0.701 | 47.7 % | 47.9 % | 46.5 % |
 | mínimo de percentiles LiFE+COMMIT2 (sin entrenar) | 0.630 | 54.3 % | 53.2 % | 41.4 % |
+| **bosque aleatorio ajustado, sin longitud** (entrega del grupo, 25-nov) | **0.725** | 63.8 % | 56.6 % | 47.4 % |
+| **bosque aleatorio ajustado, con longitud** (entrega del grupo, 25-nov) | **0.799** | 71.5 % | 62.8 % | 53.0 % |
+| boosting ajustado, sin / con longitud (25-nov) | 0.727 / 0.798 | 63.8 / 70.5 % | 56.5 / 62.4 % | 47.5 / 52.7 % |
 
 *Nota:* la fila «mínimo de percentiles» está medida sobre los 100 000 hilos (no solo la mitad de prueba) porque no se entrena. Y el ejemplo imprime las precisiones sobre los 100 000 hilos ya puntuados con el intercambio de mitades (45.0 / 50.3 / 46.0 %): por eso difieren unas décimas de la fila de la logística de 4 métodos (45.5 / 50.2 / 45.9 %), que es solo sobre `prueba`. El AUC sí se calcula sobre `prueba` y da 0.683.
 

@@ -15,6 +15,7 @@ Cada sección dice dónde están los detalles por si alguien quiere profundizar.
 7. **Un modelo** (regresión logística) que combina los pesos **sí** aprovecha los 3 métodos del doctor: aprende a restarle importancia a SIFT2 y COMMIT. AUC 0.62 con los 3 métodos; 0.70 con los 4 y la longitud.
 8. Para quedarse con **pocos hilos muy confiables**, lo mejor es **LiFE + COMMIT2**: 54 % de aciertos conservando 10 000 hilos (contra 33 % sin filtrar). **Pero** pierde haces enteros (punto 9).
 9. **Tractograma filtrado completo contra el GT (ya medido):** lo que mejor acierta hilo por hilo recupera 14 haces, contra 20 sin filtrar: **pierde 6** (BPS izquierdo y derecho, Fornix, ICP izquierdo y derecho, y CA), porque COMMIT2 les pone peso 0 a casi todos sus hilos. SIFT2 y COMMIT, que fallan hilo por hilo, sí cubren 20 de 21 haces, pero dejan 75–78 % de hilos falsos. **Ningún filtro logra a la vez pocos falsos y todos los haces.** Falta fijar el ε final con el doctor y redactar el informe.
+11. **Nuevo (25-nov), del grupo de modelos:** modelos no lineales (boosting y bosque aleatorio) suben el AUC a **0.73 sin longitud y 0.80 con longitud** (logística: 0.68). Con los 10 000 mejores hilos, **71 % son verdaderos**. Verificado por hilo; **falta ver si conservan los haces** (tarea de la Mac). Detalle: `docs/resultados/modelo_bosque_ajustado.md`, `modelo_boosting_ajustado.md`.
 10. Todo es reproducible con scripts numerados (`scripts/01…11`), ver sección 13.
 
 ---
