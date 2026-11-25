@@ -134,8 +134,12 @@ matriz mejora al simple conteo de hilos (90.7\,\% del peso en conexiones reales 
 (COMMIT2 + LiFE) baja la proporci\'on de hilos falsos de 45.2\,\% a 33.8\,\% conservando
 los 21 haces. Adem\'as, describimos una poda espacial que reduce el c\'alculo de la
 distancia de Hausdorff contra el GT de $\approx 22 s$ a $\approx 0.12 s$ por hilo sin cambiar
-el resultado. El entrenamiento de un modelo que combine los tres pesos queda como
-trabajo pendiente.
+el resultado. Con la etiqueta de Hausdorff ($<5$~mm, 33.3\,\% de hilos verdaderos)
+entrenamos modelos supervisados con intercambio de mitades. La regresi\'on log\'istica
+alcanza AUC 0.69 (0.70 con longitud); un bosque aleatorio y \textit{gradient boosting}
+llegan a 0.73 sin longitud y 0.80 con ella. Con longitud, conservando 25\,000 hilos, el
+bosque deja 37\,\% de falsos (contra 67\,\% sin filtrar y 47\,\% del mejor filtro sin
+entrenar) y recupera 19 de los 21 haces, incluidos BPS, ICP y Fornix, que COMMIT2 apaga.
 
 \medskip
 \textbf{Palabras clave:} tractograf\'ia, \textit{streamlines}, SIFT2, LiFE, COMMIT,
@@ -198,7 +202,9 @@ compartido por todos los m\'etodos (verificado por \textit{checksum}); (ii) una 
 de los cuatro m\'etodos a nivel de conexi\'on y de hilo, con m\'etricas invariantes a la
 escala; (iii) la identificaci\'on de un fuerte sesgo por longitud, tanto en los pesos como
 en la etiqueta de evaluaci\'on; y (iv) un c\'alculo de la etiqueta de Hausdorff con poda
-espacial, verificado contra fuerza bruta.
+espacial, verificado contra fuerza bruta; y (v) modelos supervisados (regresi\'on
+log\'istica, bosque aleatorio y \textit{gradient boosting}) entrenados con esa etiqueta y
+evaluados hilo por hilo y por haz.
 
 % =================== 2. Marco Teórico ===================
 
@@ -262,7 +268,7 @@ En la Figura~\ref{fig:flujo} se muestra el flujo completo (v\'ease Ap\'endice~\r
 \node[wide,below=0.9cm of life] (norm) {\textbf{B.} Normalizar a $(0,1)$\\ y filtrar con $\eps$ (por m\'etodo)};
 \node[box,right=1.2cm of norm,text width=3.6cm] (haus) {\textbf{C.} Etiqueta por Hausdorff\\ (7 bloques)};
 % fila 4
-\node[todo,below=0.9cm of norm,text width=5.4cm] (mod) {\textbf{D.} Modelo\\ $(x_S,x_L,x_C)\to\{0,1\}$};
+\node[box,below=0.9cm of norm,text width=5.4cm] (mod) {\textbf{D.} Modelo (log\'istica, bosque, boosting)\\ $(x_S,x_L,x_C,x_{C2}[,\ell])\to\Pr(y=1)$};
 % fila 5
 \node[wide,below=0.8cm of mod] (eval) {Evaluaci\'on contra el GT\\ (\% falsas, cobertura, Dice, MDF)};
 
@@ -280,7 +286,7 @@ En la Figura~\ref{fig:flujo} se muestra el flujo completo (v\'ease Ap\'endice~\r
 \draw[arr] (mod.south) -- (eval.north);
 \draw[arr] (norm.west) -- ++(-0.7,0) |- (eval.west);
 \end{tikzpicture}
-\caption{Flujo del proyecto. Las cajas con borde punteado est\'an pendientes. El tractograma es el archivo central que comparten los tres m\'etodos y la etiqueta.}
+\caption{Flujo del proyecto. El tractograma es el archivo central que comparten los tres m\'etodos y la etiqueta.}
 \label{fig:flujo}
 \end{figure}
 
@@ -399,7 +405,60 @@ haces detectados (de 21); \% de fibras falsas $=$ hilos sin haz / total;
 cobertura $=\mathrm{VP}/(\mathrm{VP}+\mathrm{FN})$; desborde $=\mathrm{FP}/(\mathrm{VP}+\mathrm{FN})$;
 Dice $=2\mathrm{VP}/(2\mathrm{VP}+\mathrm{FP}+\mathrm{FN})$; y MDF sim\'etrico (mm).
 
-% Faltan los métodos de aprendizaje 
+\subsection{Modelos supervisados}
+\label{sec:modelos-met}
+
+El paso D combina los pesos con un modelo que predice la etiqueta de cada hilo. Los
+modelos se entrenan con la etiqueta de Hausdorff ($\min_g d_H<5$~mm), que marca como
+verdaderos a 33\,349 de los 100\,000 hilos (tasa base 33.3\,\%); la distancia de Hausdorff
+y la etiqueta nunca se usan como entrada.
+
+\textbf{Entradas.} Para cada hilo $i$: el logaritmo $\log(w_{im}+10^{-6})$ del peso de
+cada uno de los cuatro m\'etodos $m$ (SIFT2, COMMIT, LiFE y COMMIT2); los indicadores
+$\mathbf{1}[w_{im}>0]$ de COMMIT, LiFE y COMMIT2 (SIFT2 nunca da cero); y el n\'umero de esos
+tres m\'etodos que conservan el hilo. Cada modelo se ajusta en dos variantes: sin la
+longitud del hilo y con ella, para medir cu\'anto aportan los pesos por encima de la
+longitud.
+
+\textbf{Regresi\'on log\'istica} (referencia lineal, entradas estandarizadas):
+\begin{equation}
+  \Pr(y_i=1)=\sigma\Big(b+\textstyle\sum_m \beta_m \log w_{im}\;[+\,\beta_\ell\,\ell_i]\Big),
+  \qquad \sigma(z)=\frac{1}{1+e^{-z}} .
+\end{equation}
+
+\textbf{Bosque aleatorio} \cite{breiman2001}: promedia $B=400$ \'arboles de decisi\'on,
+cada uno entrenado con una muestra \textit{bootstrap} de los hilos y que en cada divisi\'on
+solo considera un subconjunto aleatorio de variables,
+\begin{equation}
+  p(x)=\frac1B\sum_{b=1}^{B}T_b(x),
+\end{equation}
+donde $T_b(x)$ es la proporci\'on de verdaderos en la hoja del \'arbol $b$ en que cae $x$.
+Se eligen el m\'inimo de hilos por hoja (20, 50, 100) y la fracci\'on de variables por
+divisi\'on ($\sqrt{p}$ o la mitad).
+
+\textbf{Gradient boosting} \cite{friedman2001}: suma \'arboles peque\~nos, cada uno
+ajustado al gradiente negativo de la entrop\'ia cruzada (los residuos $y-p$) del modelo
+acumulado,
+\begin{equation}
+  F_M(x)=F_0+\nu\sum_{m=1}^{M}h_m(x),\qquad p(x)=\sigma\big(F_M(x)\big),
+\end{equation}
+con $F_0$ el \textit{log-odds} de la tasa base y $\nu$ la tasa de aprendizaje. Se usa
+\code{HistGradientBoostingClassifier} de scikit-learn \cite{pedregosa2011} con
+regularizaci\'on L2, al menos 50 hilos por hoja y parada temprana (hasta 1\,000 \'arboles; se
+detiene cuando la p\'erdida en un 15\,\% de validaci\'on interna no mejora en 20 iteraciones).
+Se eligen $\nu\in\{0.03,0.05,0.1\}$ y la profundidad m\'axima (3, 4, 6).
+
+\textbf{Validaci\'on.} Los hilos se dividen en dos mitades estratificadas por la etiqueta
+(semilla 0), \code{entrenamiento} y \code{prueba}. Se hace un \emph{intercambio de mitades}:
+un modelo entrenado con una mitad punt\'ua la otra, y viceversa, de modo que cada hilo recibe
+el puntaje de un modelo que no lo vio. Los hiperpar\'ametros se eligen dentro de la mitad de
+entrenamiento (80\,\% / 20\,\%), as\'i que la mitad puntuada no interviene en esa elecci\'on.
+El AUC se reporta solo sobre la mitad \code{prueba}, con intervalo de confianza del 95\,\%
+por \textit{bootstrap}; la precisi\'on al conservar los $n$ hilos de mayor puntaje
+($n=10\,000$, 25\,000, 50\,000) se calcula sobre los 100\,000, todos puntuados fuera de
+muestra. Para el tractograma filtrado se usan las m\'etricas por haz de arriba, con la
+etiqueta de Hausdorff y comparando todos los puntajes con el mismo $n$; un haz se
+considera recuperado si su Dice es $\ge0.3$.
 
 
 % =================== 4. RESULTADOS ===================
@@ -634,6 +693,158 @@ menos de 10~mm. El c\'alculo completo se reparte en 7 bloques de $\approx$14\,28
 distintas computadoras; los resultados son independientes entre hilos, as\'i que repartir no
 cambia nada.
 
+\subsection{Modelos supervisados (etiqueta de Hausdorff)}
+\label{sec:modelos-res}
+
+A diferencia de las secciones anteriores, que usan la etiqueta MDF, aqu\'i todo se mide con
+la etiqueta de Hausdorff $<5$~mm (33.3\,\% de verdaderos; sin filtrar hay 66.7\,\% de
+falsos, no 45.2\,\%). Con ella, el AUC por hilo de cada puntaje solo es 0.426 (SIFT2),
+0.449 (COMMIT), 0.601 (LiFE), 0.634 (COMMIT2) y 0.652 (longitud): el orden de los m\'etodos
+es el mismo que con la MDF, y SIFT2 y COMMIT siguen por debajo del azar.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ & & & \multicolumn{3}{c}{\textbf{\% verdaderos entre los $n$ mejores}}\\
+\cmidrule(l){4-6}
+\textbf{Modelo} & \textbf{Longitud} & \textbf{AUC (IC 95\,\%)} & $n=10\,000$ & 25\,000 & 50\,000\\
+\midrule
+COMMIT2 solo (referencia)   & --- & 0.633                 & 48.5 & 52.3 & 42.3\\
+Longitud sola (referencia)  & --- & 0.649                 & 31.1 & 41.8 & 42.1\\
+\addlinespace
+Log\'istica                 & no  & 0.688 (0.683--0.693)  & 46.5 & 50.2 & 46.0\\
+Bosque aleatorio            & no  & 0.725 (0.721--0.729)  & 63.8 & 56.6 & 47.4\\
+\textit{Gradient boosting}  & no  & \textbf{0.727} (0.723--0.732) & 63.8 & 56.5 & 47.5\\
+\addlinespace
+Log\'istica                 & s\'i & 0.699 (0.695--0.704) & 45.0 & 48.8 & 46.7\\
+Bosque aleatorio            & s\'i & \textbf{0.799} (0.795--0.802) & \textbf{71.4} & \textbf{62.8} & \textbf{53.0}\\
+\textit{Gradient boosting}  & s\'i & 0.798 (0.794--0.801) & 70.4 & 62.4 & 52.7\\
+\bottomrule
+\end{tabular}
+\caption{Modelos supervisados con la etiqueta de Hausdorff $<5$~mm (tasa base 33.3\,\%). AUC
+en la mitad \code{prueba}; precisi\'on sobre los 100\,000 hilos puntuados por intercambio de
+mitades. Las referencias se miden en la mitad \code{prueba}.}
+\label{tab:modelos}
+\end{table}
+
+\textbf{La log\'istica s\'i aprovecha los m\'etodos.} El promedio de percentiles de SIFT2,
+COMMIT y LiFE no sirve con esta etiqueta (AUC 0.485). La regresi\'on log\'istica con esos
+mismos tres pesos llega a 0.623 porque aprende a restarles importancia: les asigna
+coeficiente negativo a SIFT2 ($-0.26$) y a COMMIT ($-0.03$), y positivo a LiFE ($+0.34$).
+Con los cuatro m\'etodos (Tabla~\ref{tab:coef}) COMMIT2 recibe el coeficiente m\'as grande;
+al a\~nadir la longitud, el de SIFT2 pasa de $-0.28$ a $-0.03$: lo que aportaba SIFT2 era,
+sobre todo, informaci\'on de longitud.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Modelo log\'istico} & \textbf{SIFT2} & \textbf{COMMIT} & \textbf{LiFE} & \textbf{COMMIT2} & \textbf{Longitud}\\
+\midrule
+SIFT2 + COMMIT + LiFE   & $-0.26$ & $-0.03$ & $+0.34$ & & \\
+4 m\'etodos             & $-0.28$ & $-0.04$ & $+0.21$ & $+0.50$ & \\
+4 m\'etodos + longitud  & $-0.03$ & $-0.05$ & $+0.16$ & $+0.36$ & $+0.77$\\
+\bottomrule
+\end{tabular}
+\caption{Coeficientes de la regresi\'on log\'istica (entradas estandarizadas, logaritmo del
+peso). Un coeficiente negativo indica que a m\'as peso, menos probable es que el hilo sea
+verdadero.}
+\label{tab:coef}
+\end{table}
+
+\textbf{La no linealidad y la longitud explican el salto.} El bosque aleatorio y el
+\textit{gradient boosting} le ganan a la log\'istica $\approx0.04$ de AUC sin longitud y
+$\approx0.10$ con ella. La longitud sola tiene AUC 0.65 y en la log\'istica apenas suma
+0.01, pero en los \'arboles aporta $\approx0.07$: su efecto no es lineal y depende de los
+pesos. Conservando los 10\,000 hilos de mayor puntaje, el 71\,\% son verdaderos, contra el
+33.3\,\% sin filtrar, el 46.5\,\% de la log\'istica y el 54.3\,\% del mejor filtro sin
+entrenamiento (m\'inimo de percentiles de LiFE y COMMIT2). La b\'usqueda de
+hiperpar\'ametros mejora poco (de 0.791 a 0.799 en el bosque y de 0.793 a 0.798 en el
+\textit{boosting}, ambos con longitud) y en las cuatro corridas elige \'arboles profundos
+(hojas de 20 hilos en el bosque, profundidad 6 en el \textit{boosting}). Los dos modelos
+son equivalentes en la pr\'actica: la diferencia pareada de AUC es $+0.0013$ (IC 95\,\%
+$-0.0001$ a $+0.0026$) y sus puntajes tienen correlaci\'on $\ge0.96$. El AUC casi no cambia
+entre las dos mitades, sin se\~nales de fuga de datos.
+
+\textbf{Rescate de hilos que COMMIT2 apaga.} COMMIT2 asigna peso 0 a 15\,389 hilos
+verdaderos. Entre los 25\,000 mejores del bosque con longitud quedan el 25.0\,\% de ellos
+(\textit{boosting}: 24.2\,\%); sin longitud, solo el 4.1\,\% (1.8\,\%), y con la log\'istica,
+el 0.5\,\%.
+
+\subsection{Tractograma filtrado por los modelos contra el GT}
+\label{sec:modelos-haces}
+
+Un buen AUC por hilo no garantiza un buen tractograma: los filtros con menos falsos
+(m\'inimo de LiFE y COMMIT2, COMMIT2 solo, log\'istica) pierden haces enteros, porque
+COMMIT2 con $\lambda=10^{-2}$ asigna peso 0 al 99.7\,\% de los hilos verdaderos de BPS y a
+todos los de Fornix e ICP. La Tabla~\ref{tab:modelos-haces} compara los tractogramas
+filtrados con el mismo n\'umero de hilos.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Xcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{$n=10\,000$} & \multicolumn{3}{c}{$n=25\,000$}\\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+\textbf{Puntaje} & \textbf{\% falsos} & \textbf{Haces} & \textbf{Dice} & \textbf{\% falsos} & \textbf{Haces} & \textbf{Dice}\\
+\midrule
+Sin filtrar (100\,000 hilos)       & 66.7 & 20 & 0.771 & 66.7 & 20 & 0.771\\
+COMMIT                             & 85.3 & 19 & 0.515 & 74.7 & 20 & 0.703\\
+LiFE                               & 57.0 &  9 & 0.280 & 58.9 & 17 & 0.487\\
+COMMIT2                            & 51.3 & 13 & 0.353 & 47.5 & 14 & 0.502\\
+M\'inimo LiFE + COMMIT2            & 45.7 & 13 & 0.374 & 46.8 & 14 & 0.493\\
+Longitud sola                      & 68.3 &  5 & 0.152 & 57.8 &  9 & 0.317\\
+\addlinespace
+Log\'istica, 4 m\'etodos           & 55.0 & 12 & 0.357 & 49.7 & 14 & 0.497\\
+Log\'istica, 4 m\'etodos + longitud& 52.6 &  7 & 0.201 & 51.8 & 13 & 0.415\\
+Bosque, sin longitud               & 36.2 & 14 & 0.443 & 43.4 & 16 & 0.556\\
+\textit{Boosting}, sin longitud    & 36.2 & 14 & 0.443 & 43.5 & 16 & 0.545\\
+Bosque, con longitud               & \textbf{28.6} & \textbf{18} & 0.530 & \textbf{37.2} & \textbf{19} & 0.651\\
+\textit{Boosting}, con longitud    & 29.6 & \textbf{18} & \textbf{0.541} & 37.6 & 18 & 0.627\\
+\bottomrule
+\end{tabularx}
+\caption{Tractograma filtrado contra el GT con la etiqueta de Hausdorff, al mismo n\'umero de
+hilos. \emph{Haces} = haces (de 21) con Dice $\ge0.3$. El Dice (promedio sobre los 21 haces)
+solo cuenta los hilos verdaderos de cada haz; el costo de los falsos est\'a en la columna
+\% falsos.}
+\label{tab:modelos-haces}
+\end{table}
+
+Los modelos de \'arboles con longitud son los primeros puntajes que logran a la vez
+\textbf{pocos falsos y casi todos los haces}. Con 25\,000 hilos, el bosque deja 37.2\,\% de
+falsos (contra 46.8\,\% del mejor filtro anterior y 66.7\,\% sin filtrar) y recupera 19 de
+21 haces, contra 14. Los haces que antes se perd\'ian vuelven (Tabla~\ref{tab:haces-perdidos}):
+BPS izquierdo y derecho pasan de Dice 0.03--0.08 a 0.73--0.75, ICP de 0 a 0.54--0.60, y el
+Fornix a 0.46 en el bosque (0.05 en el \textit{boosting}). Solo quedan fuera CA (33 hilos
+verdaderos en todo el tractograma) y CP (uno solo). Sin la longitud, los mismos modelos
+recuperan BPS a medias (Dice 0.38--0.46) y no recuperan ICP ni Fornix: el rescate depende de
+combinar la longitud con los pesos, ya que la longitud sola recupera BPS pero pierde ICP y
+SCP, que son cortos ($\approx$60~mm).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Haz} & \textbf{COMMIT2} & \textbf{M\'in. L+C2} & \textbf{Bosque} & \textbf{Bosque + long.} & \textbf{\textit{Boost.} + long.} & \textbf{Sin filtrar}\\
+\midrule
+BPS izq.  & 0.08 & 0.03 & 0.46 & \textbf{0.74} & 0.73 & 0.78\\
+BPS der.  & 0.07 & 0.04 & 0.46 & \textbf{0.75} & 0.74 & 0.80\\
+Fornix    & 0    & 0    & 0    & \textbf{0.46} & 0.05 & 0.81\\
+ICP izq.  & 0    & 0    & 0.04 & 0.57 & \textbf{0.60} & 0.78\\
+ICP der.  & 0    & 0    & 0.14 & 0.54 & \textbf{0.57} & 0.78\\
+CA        & 0    & 0    & 0    & 0    & 0    & 0.73\\
+\bottomrule
+\end{tabular}
+\caption{Dice por haz con 25\,000 hilos en los haces que pierden los filtros basados en
+COMMIT2 (M\'in. L+C2 = m\'inimo de percentiles de LiFE y COMMIT2).}
+\label{tab:haces-perdidos}
+\end{table}
+
 % =================== 5. DISCUSIÓN ===================
 \section{Discusión}
 
@@ -657,7 +868,19 @@ teor\'ia pero no cu\'anto en estos datos, conviene reportar ambas.
 
 %\textbf{La etiqueta condiciona la conclusi\'on.} La MDF~$<5$~mm marca como verdadero al 54.8\,\% de los hilos, pero solo al 3.9\,\% de los menores de 56~mm; una etiqueta por m\'ascara, en cambio, marca al 94\,\%. Ninguna es adecuada, y parte de ``COMMIT va al rev\'es'' proviene de la etiqueta. La de Hausdorff dirigida, que pregunta si el hilo est\'a \emph{dentro} de un haz, no castiga a los hilos cortos que s\'i caen en uno, y por ello puede cambiar el orden de los m\'etodos. Dado que se conoce c\'omo difieren en teor\'ia pero no cu\'anto en estos datos, conviene reportar ambas.
 
-Cabe señalar que, del análisis anterior hay diferentes limitaciones. (i) El Dice no sirve para elegir el umbral: queda entre $0.746$ y $0.759$ en $40$ combinaciones y el m\'aximo es siempre ``sin filtrar''. (ii) El umbral se elige con el mismo GT con que se eval\'ua, lo que es optimista. (iii) Eliminar el peso $0$ es solo una hip\'otesis; sin embargo, SIFT2 nunca da $0$, por lo que se requiere un corte arbitrario. (iv) COMMIT2 solo tiene $36\,928$ hilos con peso positivo, y al compararlo con el mismo $n$ mayor se completa con ceros al azar. (v) La AUC por extremos de COMMIT2 ($0.80$) est\'a inflada porque sus grupos se definen con los mismos pares de regiones que esa etiqueta.
+Los modelos supervisados resuelven el conflicto entre precisi\'on por hilo y cobertura por
+haz que dejaban los filtros basados en COMMIT2. Un modelo de \'arboles puede usar COMMIT2
+donde funciona y, cuando su peso es 0, apoyarse en LiFE, COMMIT y la longitud. Por eso
+recupera BPS, ICP y Fornix sin dejar de ser el puntaje m\'as preciso
+(Tabla~\ref{tab:modelos-haces}). Que la longitud aporte $\approx0.07$ de AUC en los
+\'arboles y casi nada en la log\'istica indica que su efecto interact\'ua con los pesos. Pero
+tambi\'en es una advertencia: parte de lo que el modelo aprende es la longitud t\'ipica de
+los haces de este fantoma, que no tiene por qu\'e trasladarse a otro cerebro. Con la
+etiqueta de Hausdorff, adem\'as, se confirma lo visto con la MDF: SIFT2 y COMMIT ordenan por
+debajo del azar hilo por hilo (AUC 0.43 y 0.45) y la log\'istica les asigna coeficientes
+negativos.
+
+Cabe señalar que, del análisis anterior hay diferentes limitaciones. (i) El Dice no sirve para elegir el umbral: queda entre $0.746$ y $0.759$ en $40$ combinaciones y el m\'aximo es siempre ``sin filtrar''. (ii) El umbral se elige con el mismo GT con que se eval\'ua, lo que es optimista. (iii) Eliminar el peso $0$ es solo una hip\'otesis; sin embargo, SIFT2 nunca da $0$, por lo que se requiere un corte arbitrario. (iv) COMMIT2 solo tiene $36\,928$ hilos con peso positivo, y al compararlo con el mismo $n$ mayor se completa con ceros al azar. (v) La AUC por extremos de COMMIT2 ($0.80$) est\'a inflada porque sus grupos se definen con los mismos pares de regiones que esa etiqueta. (vi) En los modelos, el intervalo de confianza solo refleja la variaci\'on del conjunto de prueba, no la de la partici\'on ni la de la semilla, y todo se mide en un solo fantoma y un solo tractograma.
 
 % =================== 6. ESTADO ===================
 \section{Estado del trabajo y siguientes pasos}
@@ -672,8 +895,8 @@ Cabe señalar que, del análisis anterior hay diferentes limitaciones. (i) El Di
 \midrule
 A & Vector de 100\,000 pesos por m\'etodo (SIFT2, LiFE, COMMIT; COMMIT2 como extra) & Hecho\\
 B & Normalizar a $(0,1)$, filtrar con $\eps$ y comparar cada m\'etodo con el GT & Parcial\\
-C & Etiqueta 0/1 por hilo con Hausdorff & En curso\\
-D & Modelo $(x_S,x_L,x_C)\to$ etiqueta y su tractograma filtrado & Pendiente\\
+C & Etiqueta 0/1 por hilo con Hausdorff ($\eps_H=5$~mm) & Hecho\\
+D & Modelo $(x_S,x_L,x_C)\to$ etiqueta y su tractograma filtrado & Hecho\\
 \bottomrule
 \end{tabularx}
 \caption{Estado frente al objetivo.}
@@ -684,20 +907,18 @@ D & Modelo $(x_S,x_L,x_C)\to$ etiqueta y su tractograma filtrado & Pendiente\\
 falta el barrido de $\eps$ (por ejemplo, de 0.01 a 0.9) con comparaci\'on a igual n\'umero de
 hilos conservados, y decidir entre normalizaci\'on por m\'inimo--m\'aximo o por percentil.
 
-\textbf{Paso C.} El script est\'a probado; falta ejecutarlo en las 7 computadoras y unir los
-bloques. Se propone $\eps_H=5$~mm ($\approx$2.5 v\'oxeles de 2~mm, igual al valor de la MDF
-para poder comparar) y barrer 2, 3, 5, 7 y 10~mm. Despu\'es se compara con la etiqueta MDF
-(matriz de confusi\'on para varios $\eps$) y se revisa si cambia el orden de los m\'etodos.
+\textbf{Paso C.} La etiqueta se calcul\'o en 7 computadoras para los 100\,000 hilos y se
+fij\'o $\eps_H=5$~mm (33\,349 verdaderos). Con 3 y 7~mm el orden de los m\'etodos y de los
+modelos log\'isticos no cambia. Falta pasar a esta etiqueta los resultados de las
+secciones anteriores que todav\'ia usan la MDF.
 
-\textbf{Paso D.} Se propone una regresi\'on log\'istica
-\begin{equation}
-  \Pr(y_i=1)=\sigma\big(\alpha\,x_{iS}+\beta\,x_{iL}+\gamma\,x_{iC}+b\big),
-\end{equation}
-con el voto (v\'alido si al menos 2 de 3 m\'etodos lo aceptan) y el filtro simple por $\eps$
-como comparaciones. Debe separarse entrenamiento y prueba (por ejemplo, con distintos
-bloques de hilos o validaci\'on cruzada) y reportar solo sobre la parte de prueba. Antes de
-interpretar el modelo hay que comprobar con Hausdorff el sentido en que ordenan COMMIT y
-SIFT2.
+\textbf{Paso D.} Se entrenaron la regresi\'on log\'istica, un bosque aleatorio y
+\textit{gradient boosting} (Secciones~\ref{sec:modelos-met} y~\ref{sec:modelos-res}), con
+intercambio de mitades, y se compararon sus tractogramas filtrados con el GT
+(Secci\'on~\ref{sec:modelos-haces}). Falta decidir con el investigador qu\'e se prioriza
+(limpieza o haces) y con cu\'antos hilos se reporta el tractograma final. Tambi\'en falta
+ampliar la rejilla de hiperpar\'ametros, que qued\'o en el borde (hojas de 20 hilos,
+profundidad 6), y comprobar los modelos en otro tractograma o fantoma.
 
 \textbf{Otros pendientes:} una etiqueta intermedia por haz (por ejemplo, la fracci\'on de
 puntos del hilo a $\le2$~mm de un haz), elegir el umbral con la mitad de los haces y evaluar
@@ -715,9 +936,13 @@ supera a todos, por lo que cualquier modelo debe considerarla expl\'icitamente. 
 combinaci\'on actual es COMMIT2 + LiFE, que reduce las fibras falsas de 45.2\,\% a 33.8\,\%
 sin perder haces, aunque con $u\ge0.3$ COMMIT2 solo es igual o mejor. Adem\'as, la poda
 espacial hace viable la etiqueta de Hausdorff (de d\'ias a $\approx$35 minutos por bloque) con
-resultado id\'entico a la fuerza bruta en la muestra verificada. Los resultados dependen de
-la etiqueta y se midieron con la MDF; su confirmaci\'on con Hausdorff y el entrenamiento del
-modelo son los pasos que faltan para cerrar el objetivo.
+resultado id\'entico a la fuerza bruta en la muestra verificada. Con esa etiqueta, los
+modelos supervisados cierran el objetivo: un promedio de los pesos no sirve, pero un modelo
+s\'i aprovecha los m\'etodos, y los modelos de \'arboles con longitud (AUC 0.80) son los
+\'unicos puntajes que reducen las fibras falsas (37\,\% con 25\,000 hilos, contra 67\,\% sin
+filtrar) sin perder casi ning\'un haz (19 de 21). La longitud aporta buena parte de esa
+mejora, as\'i que conviene reportar siempre tambi\'en la variante sin ella (AUC 0.73, 16
+haces).
 
 % =================== APÉNDICE ===================
 \appendix
@@ -744,6 +969,10 @@ MRtrix3 3.0.8 aparte). COMMIT falla con rutas que tengan acentos o espacios.
 \code{07\_normalizacion.sh} & normalizaci\'on por percentil y combinaci\'on & B (parcial)\\
 \code{08\_hausdorff.sh}     & etiqueta de Hausdorff por bloques & C\\
 \code{09\_filtrar\_pesos.sh}& normalizar por el m\'aximo y filtrar con $\eps$ & B\\
+\code{crear\_tabla\_modelos.py} & tabla por hilo (pesos, longitud, etiqueta, mitad) & D\\
+\code{11\_modelo.sh}        & regresi\'on log\'istica con intercambio de mitades & D\\
+\code{modelo\_bosque\_ajustado.py} & bosque aleatorio con b\'usqueda de hiperpar\'ametros & D\\
+\code{modelo\_boosting\_ajustado.py} & \textit{gradient boosting} con parada temprana & D\\
 \bottomrule
 \end{tabularx}
 \caption{Scripts del repositorio y qu\'e producen.}
@@ -793,6 +1022,11 @@ $\approx$21\,\% de conexiones reales en la matriz.
 \bibitem{panagiotaki2012} E. Panagiotaki \textit{et al.} Compartment models of the diffusion
   MR signal in brain white matter: A taxonomic comparison. \textit{NeuroImage},
   59(3):2241--2254, 2012.
+\bibitem{breiman2001} L. Breiman. Random forests. \textit{Machine Learning}, 45(1):5--32, 2001.
+\bibitem{friedman2001} J.~H. Friedman. Greedy function approximation: A gradient boosting
+  machine. \textit{Annals of Statistics}, 29(5):1189--1232, 2001.
+\bibitem{pedregosa2011} F. Pedregosa \textit{et al.} Scikit-learn: Machine learning in
+  Python. \textit{Journal of Machine Learning Research}, 12:2825--2830, 2011.
 \end{thebibliography}
 
 \end{document}
