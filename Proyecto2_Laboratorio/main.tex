@@ -112,7 +112,7 @@
   {\small\color{cimatgray}
   CIMAT, Unidad Aguascalientes\\
   Laboratorio de Resoluci\'on de Problemas~I\\
-  Noviembre de 2026 \,---\, trabajo en progreso\par}
+  Noviembre de 2026\par}
 \end{center}
 
 \vspace{0.6em}
@@ -615,9 +615,8 @@ $10^{-3}$ son los \'utiles: conservan los 21 haces, con 41.7\,\% y 31.2\,\% de f
 Para $\lambda=10^{-2}$, nuestra corrida deja 36\,928 hilos con peso positivo, frente a
 62\,779 reportados por una corrida previa del equipo con el mismo $\lambda$; la diferencia
 puede venir de los pesos de grupo adaptativos, de usar 85 regiones (con el nodo 0) o de un
-tractograma distinto, y no est\'a resuelta. Con la etiqueta de Hausdorff solo se ha evaluado
-$\lambda=10^{-2}$, que apaga BPS, Fornix e ICP (Secci\'on~\ref{sec:modelos-haces}); repetir esa
-evaluaci\'on con $10^{-3}$ y $10^{-4}$, que con la MDF conservaban los 21 haces, est\'a pendiente.
+tractograma distinto. Con la etiqueta de Hausdorff se evalu\'o $\lambda=10^{-2}$, que apaga
+BPS, Fornix e ICP (Secci\'on~\ref{sec:modelos-haces}).
 
 \subsection{Combinaci\'on de m\'etodos por percentiles}
 \label{sec:res-mdf-fin}
@@ -906,7 +905,7 @@ Se propuso una cuarta variable (longitud) en una versión aparte del modelo para
 Con la etiqueta MDF, la mejor combinaci\'on por percentiles, COMMIT2 + LiFE, bajaba las fibras falsas de $45.2$\,\% a $33.8$\,\% conservando los $21$ haces (Tabla~\ref{tab:combo}); con la de Hausdorff, esa misma combinaci\'on apenas supera a COMMIT2 solo (AUC $0.649$ contra $0.634$) y queda lejos de los modelos supervisados. El margen es estrecho, porque a partir de $u=0.3$ COMMIT2 por s\'i solo iguala o supera a la combinaci\'on con el mismo n\'umero de hilos (Tabla~\ref{tab:mismon}). Combinar ayuda solo
 cuando los m\'etodos que entran aportan informaci\'on por hilo, y por eso a\~nadir COMMIT y SIFT2 al promedio empeora el puntaje.
 
-Antes de tener la etiqueta de Hausdorff cab\'ia la duda de que el orden de los m\'etodos fuera un efecto de la etiqueta: la MDF, con un umbral de $5$~mm, marca como verdadero al $54.8$\,\% de los hilos, pero solo al $3.9$\,\% de los menores de $56$~mm, y castiga a los cortos. Con Hausdorff el orden se mantiene (Figura~\ref{fig:auc}): SIFT2 y COMMIT siguen por debajo del azar y LiFE y COMMIT2 por encima, as\'i que el resultado no depende de la etiqueta, sino de c\'omo cada m\'etodo trata la longitud. Queda por explorar la versi\'on dirigida de Hausdorff, que pregunta si el hilo est\'a \emph{dentro} de un haz y no castiga a los cortos que s\'i caen en uno.
+Antes de tener la etiqueta de Hausdorff cab\'ia la duda de que el orden de los m\'etodos fuera un efecto de la etiqueta: la MDF, con un umbral de $5$~mm, marca como verdadero al $54.8$\,\% de los hilos, pero solo al $3.9$\,\% de los menores de $56$~mm, y castiga a los cortos. Con Hausdorff el orden se mantiene (Figura~\ref{fig:auc}): SIFT2 y COMMIT siguen por debajo del azar y LiFE y COMMIT2 por encima, as\'i que el resultado no depende de la etiqueta, sino de c\'omo cada m\'etodo trata la longitud.
 
 %\textbf{La etiqueta condiciona la conclusi\'on.} La MDF~$<5$~mm marca como verdadero al 54.8\,\% de los hilos, pero solo al 3.9\,\% de los menores de 56~mm; una etiqueta por m\'ascara, en cambio, marca al 94\,\%. Ninguna es adecuada, y parte de ``COMMIT va al rev\'es'' proviene de la etiqueta. La de Hausdorff dirigida, que pregunta si el hilo est\'a \emph{dentro} de un haz, no castiga a los hilos cortos que s\'i caen en uno, y por ello puede cambiar el orden de los m\'etodos. Dado que se conoce c\'omo difieren en teor\'ia pero no cu\'anto en estos datos, conviene reportar ambas.
 
@@ -923,53 +922,6 @@ debajo del azar hilo por hilo (AUC 0.43 y 0.45) y la log\'istica les asigna coef
 negativos.
 
 Cabe señalar que, del análisis anterior hay diferentes limitaciones. (i) Con la etiqueta MDF, el Dice no sirv\'io para elegir el umbral de las combinaciones por percentiles: qued\'o entre $0.746$ y $0.759$ en $40$ combinaciones y el m\'aximo fue siempre ``sin filtrar''; adem\'as, el Dice por haz solo cuenta los hilos verdaderos, por lo que debe leerse junto al \% de falsos. (ii) El umbral se elige con el mismo GT con que se eval\'ua, lo que es optimista. (iii) Eliminar el peso $0$ es solo una hip\'otesis; sin embargo, SIFT2 nunca da $0$, por lo que se requiere un corte arbitrario. (iv) COMMIT2 solo tiene $36\,928$ hilos con peso positivo, y al compararlo con el mismo $n$ mayor se completa con ceros al azar. (v) La AUC por extremos de COMMIT2 ($0.80$) est\'a inflada porque sus grupos se definen con los mismos pares de regiones que esa etiqueta. (vi) En los modelos, el intervalo de confianza solo refleja la variaci\'on del conjunto de prueba, no la de la partici\'on ni la de la semilla, y todo se mide en un solo fantoma y un solo tractograma.
-
-% =================== 6. ESTADO ===================
-\section{Estado del trabajo y siguientes pasos}
-\label{sec:estado}
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabularx}{\textwidth}{@{}lXl@{}}
-\toprule
-\textbf{Paso} & \textbf{Descripci\'on} & \textbf{Estado}\\
-\midrule
-A & Vector de 100\,000 pesos por m\'etodo (SIFT2, LiFE, COMMIT; COMMIT2 como extra) & Hecho\\
-B & Normalizar a $(0,1)$, filtrar con $\eps$ y comparar cada m\'etodo con el GT & Hecho\\
-C & Etiqueta 0/1 por hilo con Hausdorff ($\eps_H=5$~mm) & Hecho\\
-D & Modelo $(x_S,x_L,x_C)\to$ etiqueta y su tractograma filtrado & Hecho\\
-\bottomrule
-\end{tabularx}
-\caption{Estado frente al objetivo.}
-\label{tab:estado}
-\end{table}
-
-\textbf{Paso B.} Cada vector se normaliz\'o por su m\'aximo y se filtr\'o con un barrido de
-$\eps$; como un mismo $\eps$ no conserva lo mismo en cada m\'etodo, la comparaci\'on se hace a
-igual n\'umero de hilos (Tabla~\ref{tab:mismon-haus}). Falta fijar con el investigador el $\eps$
-que se reporta.
-
-\textbf{Paso C.} La etiqueta se calcul\'o en 7 computadoras para los 100\,000 hilos y se
-fij\'o $\eps_H=5$~mm (33\,349 verdaderos). Con 3 y 7~mm el orden de los m\'etodos y de los
-modelos log\'isticos no cambia. El barrido de $\lambda$ de COMMIT2 y la exploraci\'on de
-combinaciones por percentiles se hicieron con la etiqueta MDF y se reportan como tales
-(Secciones~\ref{sec:res-mdf-ini} y~\ref{sec:res-mdf-fin}).
-
-\textbf{Paso D.} Se entrenaron la regresi\'on log\'istica, un bosque aleatorio y
-\textit{gradient boosting} (Secciones~\ref{sec:modelos-met} y~\ref{sec:modelos-res}), con
-intercambio de mitades, y se compararon sus tractogramas filtrados con el GT
-(Secci\'on~\ref{sec:modelos-haces}). Falta decidir con el investigador qu\'e se prioriza
-(limpieza o haces) y con cu\'antos hilos se reporta el tractograma final. Tambi\'en falta
-ampliar la rejilla de hiperpar\'ametros, que qued\'o en el borde (hojas de 20 hilos,
-profundidad 6), y comprobar los modelos en otro tractograma o fantoma.
-
-\textbf{Otros pendientes:} una etiqueta intermedia por haz (por ejemplo, la fracci\'on de
-puntos del hilo a $\le2$~mm de un haz), elegir el umbral con la mitad de los haces y evaluar
-con la otra mitad, evaluar con Hausdorff COMMIT2 con $\lambda=10^{-3}$ y $10^{-4}$ (con la MDF
-conservaban los 21 haces), probar un modelo gen\'etico que optimice directamente los haces
-recuperados y el \% de falsos (mencionado por el investigador), y aislar el efecto de la
-correcci\'on del eje $y$ en COMMIT y LiFE.
 
 % =================== 7. CONCLUSIONES ===================
 \section{Conclusiones}
