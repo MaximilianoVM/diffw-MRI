@@ -1,6 +1,6 @@
-# Actualización para el Claude de la Mac (2026-11-18)
+# Actualización del proyecto (2026-11-18)
 
-**Léelo completo antes de tocar nada.** Es el único `.md` de seguimiento en la raíz; cuando termines algo, actualiza **este archivo** (tabla de la sección 3) y no crees otros en la raíz.
+**Léelo completo antes de tocar nada.** Es el único `.md` de seguimiento del proyecto; cuando termines algo, actualiza **este archivo** (tabla de la sección 3) y no crees otros en la raíz.
 
 ## 1. Qué cambió
 

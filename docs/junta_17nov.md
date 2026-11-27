@@ -12,7 +12,7 @@ Transcripción de `docs/diff_MRI_junta17nov.pdf` (6 páginas de notas a mano). L
 
 ## Filtrado simple (páginas 2 y 3)
 
-Con un umbral ε [el valor 0.01 es de ejemplo; **está por definir**, ver `ACTUALIZACION.md`]: si el peso normalizado del hilo `i` en el método es menor que ε, el hilo `y_i` es **no válido**; si no, es **válido**. Cada método da así su tractograma filtrado, y los tres se comparan con el **ground truth** (página 3).
+Con un umbral ε [el valor 0.01 es de ejemplo; **está por definir**, ver `docs/interno/ACTUALIZACION.md`]: si el peso normalizado del hilo `i` en el método es menor que ε, el hilo `y_i` es **no válido**; si no, es **válido**. Cada método da así su tractograma filtrado, y los tres se comparan con el **ground truth** (página 3).
 
 ## Pregunta 1 (página 4): ¿qué hilos del tractograma corresponden al GT?
 

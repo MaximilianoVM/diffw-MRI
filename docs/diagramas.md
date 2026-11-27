@@ -95,8 +95,8 @@ flowchart LR
 | Fase | Estado | Dónde |
 |---|---|---|
 | 0. Datos y entorno | hecha | `environment.yml`, `data/README.md` |
-| 1. Tractograma y tres vectores de pesos | hecha | pasos 1–3 y 5; archivos en `ACTUALIZACION.md` sección 4 |
-| 2. Normalizar y filtrar con ε (paso B) | por hacer (el siguiente script) | `ACTUALIZACION.md` sección 5 |
+| 1. Tractograma y tres vectores de pesos | hecha | pasos 1–3 y 5; archivos en `docs/interno/ACTUALIZACION.md` sección 4 |
+| 2. Normalizar y filtrar con ε (paso B) | por hacer (el siguiente script) | `docs/interno/ACTUALIZACION.md` sección 5 |
 | 3. Etiqueta por Hausdorff (paso C) | script listo y probado; falta correrlo en 7 computadoras | `docs/hausdorff_instrucciones.md` |
 | 4. Modelo entrenado (paso D) | por hacer | `docs/junta_17nov.md` |
 | 5. Comparación con el GT e informe | por hacer | — |

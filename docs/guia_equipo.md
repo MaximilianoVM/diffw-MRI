@@ -1,13 +1,21 @@
-# Guía para el equipo (y para sus Claudes)
+# Guía de trabajo del equipo
 
-Objetivo: que SIFT2, COMMIT, LiFE, el etiquetado y la regla de decisión se puedan juntar sin retrabajo. Para eso todos trabajamos igual. **Lean esto completo antes de empezar. Si usan Claude Code, pásenle este archivo como primera instrucción.**
+Objetivo: que SIFT2, COMMIT, LiFE, el etiquetado y la regla de decisión se puedan juntar sin retrabajo. Para eso todos trabajamos igual. **Lean esto completo antes de empezar.**
 
 ---
 
-## 1. Instrucciones para el Claude de cada integrante (copiar y pegar)
+## 1. Reglas de trabajo
 
-> Lee `docs/guia_equipo.md`, `README.md` y `pipeline.md` del repositorio antes de hacer nada.
-> Reglas: (1) puedes modificar cualquier archivo del proyecto, aunque lo haya escrito otra persona, para que todo quede actualizado (documentos, estado, resultados, scripts); di qué cambiaste en el mensaje del commit; (2) no cambies nombres de archivos de `out/` ni la estructura de carpetas; (3) todo script va en `scripts/`, corre desde la raíz del proyecto con rutas relativas `data/` y `out/`; (4) cada comando que pongas en `pipeline.md` lleva una frase de explicación y el archivo que sale; (5) antes de borrar, mover o sobrescribir cualquier archivo en `out/` o `data/` pregúntame; (6) no instales paquetes fuera del entorno `dwmri` sin avisarme, y si hace falta uno nuevo, agrégalo a `environment.yml` con versión fija; (7) no hagas commit ni push sin que yo lo pida; (8) no ejecutes cosas pesadas (COMMIT, LiFE, tractografía) en mi laptop sin preguntarme; (9) mantén todo simple: menos archivos, menos carpetas, menos texto.
+Antes de empezar, lean esta guía, `README.md` y `pipeline.md`.
+
+1. Cualquiera puede modificar cualquier archivo del proyecto, aunque lo haya escrito otra persona, para que todo quede actualizado (documentos, estado, resultados, scripts); lo que se cambió se indica en el mensaje del commit.
+2. No se cambian nombres de archivos de `out/` ni la estructura de carpetas.
+3. Todo script va en `scripts/` y corre desde la raíz del proyecto con rutas relativas `data/` y `out/`.
+4. Cada comando que se agregue a `pipeline.md` lleva una frase de explicación y el archivo que produce.
+5. Antes de borrar, mover o sobrescribir cualquier archivo en `out/` o `data/`, se consulta con el equipo.
+6. No se instalan paquetes fuera del entorno `dwmri`; si hace falta uno nuevo, se agrega a `environment.yml` con versión fija.
+7. Los cálculos pesados (COMMIT, LiFE, tractografía) se coordinan antes de correrlos.
+8. Se mantiene todo simple: menos archivos, menos carpetas, menos texto.
 
 ---
 
@@ -15,7 +23,7 @@ Objetivo: que SIFT2, COMMIT, LiFE, el etiquetado y la regla de decisión se pued
 
 ```
 README.md          qué es el proyecto y el mapa de carpetas
-ACTUALIZACION.md   estado y cambios para quien se integra (se actualiza al terminar algo)
+docs/interno/ACTUALIZACION.md   estado y cambios para quien se integra (se actualiza al terminar algo)
 docs/              documentación: conclusiones, resultados/, equipos/, esta guía
 pipeline.md        los pasos, comando por comando, explicados
 environment.yml    entorno conda (MRtrix + Python)
@@ -113,7 +121,7 @@ python scripts/evaluar_pesos.py <METODO> out/pesos_<metodo>.txt
 | Etiqueta por haz | por decidir | `06_etiquetas.py` | `out/etiquetas.csv` |
 | Regla de decisión | por decidir | `07_decision.py` | `out/keep_<estrategia>.txt` |
 
-- `README.md`, `ACTUALIZACION.md`, `pipeline.md` y `environment.yml` son compartidos: se editan **solo para agregar su sección o su línea**, sin reescribir lo de los demás.
+- `README.md`, `docs/interno/ACTUALIZACION.md`, `pipeline.md` y `environment.yml` son compartidos: se editan **solo para agregar su sección o su línea**, sin reescribir lo de los demás.
 - Numeración de scripts: respeten los números de arriba. Si necesitan uno nuevo, el siguiente libre.
 
 ### Lo que le toca a cada método nuevo
@@ -137,7 +145,7 @@ Cada sección sigue este formato:
 
 Lo que **no** va: guías largas, teoría, planes, cronogramas.
 
-Al terminar algo, actualicen `ACTUALIZACION.md` (tabla de pasos y pendiente) y agreguen una fila a la bitácora al final de `pipeline.md` con fecha y qué hicieron.
+Al terminar algo, actualicen `docs/interno/ACTUALIZACION.md` (tabla de pasos y pendiente) y agreguen una fila a la bitácora al final de `pipeline.md` con fecha y qué hicieron.
 
 ---
 
@@ -178,6 +186,6 @@ git push                          # al terminar
 - [ ] Entrega `out/pesos_<metodo>.txt` con 100 000 pesos, ≥ 0, sin `NaN`.
 - [ ] Generó su matriz 84 × 84 y pasó `exportar_matriz84.py`.
 - [ ] `pipeline.md` tiene su sección: comandos sueltos, explicación, "Se espera".
-- [ ] `ACTUALIZACION.md` y la bitácora actualizados.
+- [ ] `docs/interno/ACTUALIZACION.md` y la bitácora actualizados.
 - [ ] No agregó carpetas ni archivos fuera de la estructura.
 - [ ] No subió `data/` ni `out/`.

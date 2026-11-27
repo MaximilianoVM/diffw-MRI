@@ -257,7 +257,7 @@ Hasta la sección 8 medimos **«¿cada hilo acierta?»**. Aquí medimos **«¿el
 | 11 | `11_modelo.sh` | normalización de Ricardo y modelo vs Hausdorff |
 | D (tractograma) | `puntajes_candidatos.py` + `normalizacion_ricardo.py --etiqueta hausdorff --mismos-n …` | tractograma filtrado contra el GT, haz por haz (sección 9) |
 
-Documentos: `README.md` (mapa), `pipeline.md` (pasos y números de control), `ACTUALIZACION.md` (estado), `docs/diagramas.md` (flujo de datos y fases), `docs/conclusiones.md` (conclusiones anteriores).
+Documentos: `README.md` (mapa), `pipeline.md` (pasos y números de control), `docs/interno/ACTUALIZACION.md` (estado), `docs/diagramas.md` (flujo de datos y fases), `docs/conclusiones.md` (conclusiones anteriores).
 
 ---
 

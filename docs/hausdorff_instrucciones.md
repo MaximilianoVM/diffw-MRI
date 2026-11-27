@@ -36,7 +36,7 @@ bash scripts/08_hausdorff.sh 3 6
 ```
 Remuestrea el GT y el bloque cada 2 mm, calcula las distancias y guarda `out/hausdorff/bloque_3_de_7.csv` (columnas `hilo, hd_min, hd_dir_min, gt_hilo`). Tarda ≈ 35 min.
 
-**Se espera:** al final imprime algo como `guardado out/hausdorff/bloque_3_de_7.csv | con correspondencia < 10 mm: 58 %`. En una prueba con 300 hilos del bloque 1 fue 58 %. El archivo pesa < 1 MB: se manda por WhatsApp o Drive a quien junta.
+**Se espera:** al final imprime algo como `guardado out/hausdorff/bloque_3_de_7.csv | con correspondencia < 10 mm: 58 %`. En una prueba con 300 hilos del bloque 1 fue 58 %. El archivo pesa < 1 MB y se envía a la persona que junta los bloques.
 
 Prueba rápida antes de la corrida completa (≈ 1 min): `python scripts/hausdorff_bloque.py 3 7 --n=100`.
 
@@ -58,7 +58,7 @@ Junta los bloques en `out/hausdorff/hausdorff.csv` (100 000 filas) y avisa si fa
 | `hd_dir_min` | Hausdorff dirigido: qué tan lejos está el punto más alejado del hilo de *algún* hilo del GT. Es más tolerante con hilos cortos que están dentro de un haz |
 | `gt_hilo` | índice del hilo del GT más cercano según `hd_min` |
 
-Se guardan **distancias**, no 0/1: el umbral `ε` se decide después (`hd_min < ε` ⇒ el hilo corresponde al GT). Ver `ACTUALIZACION.md` para la propuesta de `ε`.
+Se guardan **distancias**, no 0/1: el umbral `ε` se decide después (`hd_min < ε` ⇒ el hilo corresponde al GT). Ver `docs/interno/ACTUALIZACION.md` para la propuesta de `ε`.
 
 ## 6. Instrucciones para el Claude de cada quien (copiar y pegar)
 

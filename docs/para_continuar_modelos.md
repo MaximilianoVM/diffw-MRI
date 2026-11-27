@@ -132,7 +132,7 @@ Manda dos cosas:
 2. **Una nota corta** (un párrafo, en un `.md` o en el mensaje): qué hiciste, qué entradas usaste, si usaste la longitud, y tus números de AUC y precisión en la mitad `prueba`.
 
 Con ese archivo nosotros lo pasamos por la comparación de haces del tractograma completo (es un comando y tarda un minuto) y lo comparamos con los demás. **No tienes que tocar nada más del proyecto.**
-Si usas Git, puedes subirlos directamente (sección 10); si no, mándalos por el grupo de WhatsApp (o por Drive).
+Si usas Git, puedes subirlos directamente (sección 10); si no, envíalos a quien integra los resultados.
 
 ### Las únicas reglas
 1. **No uses** `hd_min_mm` ni `etiqueta_5mm` como entrada.
@@ -160,10 +160,10 @@ Todo lo demás es libre.
 |---|---|---|
 | **1. Sin Git** | Entregas el puntaje y tu nota (sección 8) | nada |
 | **2. Alguien sube por ti** | Mandas tu script y tu nota; otra persona los sube, y queda registrado con tu nombre | nada |
-| **3. Integrado** | Trabajas dentro del repo y subes tus propios archivos | una cuenta de GitHub y pedir acceso en el grupo de WhatsApp |
+| **3. Integrado** | Trabajas dentro del repo y subes tus propios archivos | una cuenta de GitHub con permiso de escritura en el repositorio |
 
 ### Nivel 3, paso a paso
-1. El repositorio está en <https://github.com/MaximilianoVM/diffw-MRI>. Pide acceso de escritura en el grupo de WhatsApp, con tu usuario de GitHub (para poder subir; leer y descargar no lo necesita si el repo es público), y clónalo:
+1. El repositorio está en <https://github.com/MaximilianoVM/diffw-MRI>. Para subir cambios se necesita permiso de escritura (para leer y descargar no hace falta, porque el repositorio es público). Clónalo:
    ```
    git clone https://github.com/MaximilianoVM/diffw-MRI.git
    cd diffw-MRI
@@ -190,7 +190,7 @@ Todo lo demás es libre.
 - Cada script que corra desde la raíz con rutas relativas (`data/`, `out/`).
 
 ### Si usas un asistente de IA (Claude, etc.)
-Puedes darle este texto: *«Lee `README.md`, `ACTUALIZACION.md` y `docs/para_continuar_modelos.md`. Mi tarea es construir un modelo que prediga `etiqueta_5mm` a partir de los pesos de `out/modelos/tabla_hilos.csv`. Reglas: no uses `hd_min_mm` ni `etiqueta_5mm` como entrada; entrena solo con `conjunto == "entrenamiento"` y reporta en `prueba`; si usas la longitud, reporta también sin ella; mi script va en `scripts/modelo_<nombre>.py` y mi nota en `docs/resultados/`; no hagas commit ni push sin que yo lo pida.»*
+Puedes darle este texto: *«Lee `README.md`, `docs/interno/ACTUALIZACION.md` y `docs/para_continuar_modelos.md`. Mi tarea es construir un modelo que prediga `etiqueta_5mm` a partir de los pesos de `out/modelos/tabla_hilos.csv`. Reglas: no uses `hd_min_mm` ni `etiqueta_5mm` como entrada; entrena solo con `conjunto == "entrenamiento"` y reporta en `prueba`; si usas la longitud, reporta también sin ella; mi script va en `scripts/modelo_<nombre>.py` y mi nota en `docs/resultados/`; no hagas commit ni push sin que yo lo pida.»*
 
 ## 11. Si quieres profundizar (no es necesario para empezar)
 El paquete incluye en `contexto/` tres documentos:
@@ -198,7 +198,7 @@ El paquete incluye en `contexto/` tres documentos:
 - `modelo_y_normalizacion_hausdorff.md`: los modelos que ya se probaron, con todas las tablas.
 - `tractograma_modelo_vs_gt.md`: la comparación de haces completa.
 
-Si usas el repositorio completo (sección 10): `README.md` (mapa), `ACTUALIZACION.md` (estado), `docs/` (documentos) y `scripts/` (los pasos numerados 01–11). La tabla se regenera con `python scripts/crear_tabla_modelos.py`.
+Si usas el repositorio completo (sección 10): `README.md` (mapa), `docs/interno/ACTUALIZACION.md` (estado), `docs/` (documentos) y `scripts/` (los pasos numerados 01–11). La tabla se regenera con `python scripts/crear_tabla_modelos.py`.
 
 ## 12. Si algo falla
 - *El AUC del ejemplo no da 0.683:* revisa que `tabla_hilos.csv` esté completo (100 000 filas) y no lo hayas reordenado.
