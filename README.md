@@ -98,7 +98,7 @@ Con `data/` completo:
 
 Después se continúa con los comandos de la reproducción rápida. Los pasos intermedios (7 y 9) son exploratorios. Cada comando, uno por uno, está en [`pipeline.md`](pipeline.md).
 
-**Cálculo de la etiqueta.** Por fuerza bruta, la distancia de Hausdorff contra los 189 985 hilos del GT tomaría ≈ 22 s por hilo (≈ 25 días en total). `scripts/hausdorff_bloque.py` usa una poda espacial exacta con un árbol KD y baja a ≈ 0.12 s por hilo. `scripts/validar_hausdorff_rapido.py` la compara con la fuerza bruta en 40 hilos al azar. Explicación en [`docs/hausdorff_fragmento_basico.md`](docs/hausdorff_fragmento_basico.md).
+**Cálculo de la etiqueta.** Por fuerza bruta, la distancia de Hausdorff contra los 189 985 hilos del GT tomaría bastante tiempo. `scripts/hausdorff_bloque.py` usa una poda espacial exacta con un árbol KD y baja a ≈ 0.12 s por hilo. `scripts/validar_hausdorff_rapido.py` la compara con la fuerza bruta en 40 hilos al azar. Explicación en [`docs/hausdorff_fragmento_basico.md`](docs/hausdorff_fragmento_basico.md).
 
 ### Aleatoriedad
 
@@ -130,11 +130,3 @@ reporte/     reporte en LaTeX (main.tex) y presentación (presentacion/)
 ## Autores
 
 Sarai Hernández, Andrea Martínez, Jaqueline Barajas, Mario Cruz, Maximiliano Vaca, Ricardo Carranza y Pablo Alvarado. CIMAT, Unidad Aguascalientes.
-
-## Referencias principales
-
-- Renauld *et al.* Validate your white matter tractography algorithms with a reappraised ISMRM 2015 Tractography Challenge scoring system. *Scientific Reports* 13:2347, 2023.
-- Smith *et al.* SIFT2. *NeuroImage* 119:338–351, 2015.
-- Pestilli *et al.* LiFE. *Nature Methods* 11:1058–1063, 2014.
-- Daducci *et al.* COMMIT. *IEEE Trans. Med. Imaging* 34(1):246–257, 2015.
-- Schiavi *et al.* COMMIT2. *Science Advances* 6(31):eaba8245, 2020.
