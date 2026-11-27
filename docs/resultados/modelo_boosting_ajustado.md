@@ -3,7 +3,7 @@
 > **Integrado al repo el 2026-11-25** (entrega del grupo de modelos). Script: `scripts/modelo_boosting_ajustado.py`; puntajes en `out/modelos/` (no se suben a Git; se regeneran).
 > **Verificado:** con los puntajes entregados y `out/modelos/tabla_hilos.csv` se reproducen el AUC en `prueba` y las precisiones de la tabla de abajo (diferencias ≤ 0.1 puntos, por desempates); el AUC es casi igual en las dos mitades, sin señales de fuga de datos.
 > **Reproducir desde la raíz:** `python scripts/modelo_boosting_ajustado.py --longitud` y `python scripts/modelo_boosting_ajustado.py` (escriben en `out/modelos/`).
-> **No vinieron en la entrega:** el MLP ajustado y `comparar_modelos.py`, que la tabla menciona como referencia.
+> **No vinieron en la entrega:** `comparar_modelos.py`. La nota del MLP ajustado llegó después: `docs/resultados/modelo_mlp_ajustado.md` (script reconstruido en `scripts/modelo_mlp_ajustado.py`).
 > **Pendiente:** comparar el tractograma filtrado por haces (sección 3.6 de `docs/siguiente_mac_normalizacion.md`).
 
 **Archivos entregados:** `puntaje_boosting_ajustado_long.txt` (con longitud) y `puntaje_boosting_ajustado.txt` (sin longitud).

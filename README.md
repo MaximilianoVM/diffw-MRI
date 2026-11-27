@@ -13,7 +13,7 @@ requirements.txt    versiones exactas de Python (venv, macOS)
 data/               entrada y tracks_100k.tck (no se sube; ver data/README.md)
 out/                todo lo generado; casi nada se sube (sí: vectores de pesos, hausdorff.csv, out/modelos/tabla_hilos.csv)
 Proyecto2_Laboratorio/  reporte en LaTeX (main.tex); el PDF no se sube
-scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar  11_modelo  modelo_bosque_ajustado  modelo_boosting_ajustado  crear_tabla_modelos
+scripts/            01_preprocess  02_tractography  03_commit  04_matrices  05_life  06_commit2  07_normalizacion  08_hausdorff  09_filtrar_pesos  10_evaluar  11_modelo  modelo_bosque_ajustado  modelo_boosting_ajustado  modelo_mlp_ajustado  crear_tabla_modelos
                     + los .py de apoyo (correr_*, comparar_*, evaluar_pesos, normalizacion_ricardo...)
 docs/
   junta_17nov.md        objetivo según el investigador
@@ -31,7 +31,7 @@ docs/
   hausdorff_instrucciones.md  reparto del cálculo de la etiqueta entre computadoras
   etiqueta_hausdorff_vs_mdf.md  por qué Hausdorff y por qué mostrar también MDF
   resultados/           extras.md (resumen), matrices.md, commit2.md, normalizacion.md, modelo_y_normalizacion_hausdorff.md,
-                        tractograma_modelo_vs_gt.md, modelo_bosque_ajustado.md y modelo_boosting_ajustado.md (grupo de modelos)
+                        tractograma_modelo_vs_gt.md, modelo_bosque_ajustado.md, modelo_boosting_ajustado.md y modelo_mlp_ajustado.md (grupo de modelos)
   equipos/              lo que mandaron SIFT2, LiFE, COMMIT2 y el pipeline anterior
 ```
 

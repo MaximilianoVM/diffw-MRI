@@ -21,3 +21,4 @@ dependencies:
       - scikit-learn==1.9.1
       - dipy==1.12.1         # LiFE, MDF y comparación por haces
       - matplotlib==3.11.2   # gráfica de normalizacion_ricardo.py
+      - torch                # solo scripts/modelo_mlp_ajustado.py (versión no probada)
