@@ -1,0 +1,1333 @@
+% !TEX program = pdflatex
+% ---------------------------------------------------------------
+%  Artículo: selección de streamlines con pesos SIFT2, LiFE y COMMIT
+%  CIMAT, Unidad Aguascalientes
+%  Compilar con:  pdflatex articulo_tractografia.tex  (dos veces)
+%  Logo: coloca el archivo  logo_cimat.png  (o .jpg / .pdf) en la
+%  misma carpeta; si no existe, se dibuja un recuadro de aviso.
+% ---------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+\usepackage{siunitx}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[scaled=.90]{helvet}
+\usepackage[spanish]{babel}
+\renewcommand{\ttdefault}{pcr}
+% Idioma: babel en español si está instalado; si no, rótulos manuales.
+\renewcommand{\spanishtablename}{Tabla}
+\IfFileExists{spanish.ldf}{%
+  \usepackage[spanish,es-tabla,es-noshorthands]{babel}%
+  \decimalpoint
+}{%
+  \AtBeginDocument{%
+    \renewcommand{\figurename}{Figura}\renewcommand{\tablename}{Tabla}%
+    \renewcommand{\refname}{Referencias}\renewcommand{\appendixname}{Ap\'endice}}%
+}
+\usepackage[top=2.6cm,bottom=2.4cm,left=2.4cm,right=2.4cm,headheight=15pt]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array,multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usepackage[colorlinks=true,linkcolor=cimatblue,citecolor=cimatblue,urlcolor=cimatblue]{hyperref}
+
+% ----- colores (azul institucional sobrio) -----
+\definecolor{cimatblue}{RGB}{0,62,126}
+\definecolor{cimatgray}{RGB}{90,90,90}
+\definecolor{boxfill}{RGB}{232,240,250}
+\definecolor{okgreen}{RGB}{46,125,50}
+\definecolor{warnorange}{RGB}{239,108,0}
+
+% ----- formato -----
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.12}
+\captionsetup{font=small,labelfont={bf,color=cimatblue},labelsep=period,margin=0.5cm}
+\setlist{itemsep=0.15em,topsep=0.3em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{cimatgray}Selección de streamlines con pesos SIFT2, LiFE y COMMIT}
+\fancyhead[R]{\small\color{cimatgray}CIMAT, Unidad Aguascalientes}
+\fancyfoot[C]{\small\thepage}
+
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{cimatblue}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{cimatblue}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.5em}
+\titlespacing*{\subsection}{0pt}{1.0em}{0.35em}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\eps}{\varepsilon}
+
+% ----- logo -----
+\newcommand{\cimatlogo}{%
+  \IfFileExists{logoCimat.png}{\includegraphics[height=2cm]{logoCimat.png}}{%
+  \IfFileExists{logoCimat.jpg}{\includegraphics[height=2cm]{logoCimat.png}}{%
+  \IfFileExists{logoCimat.pdf}{\includegraphics[height=2cm]{logo_cimat.pdf}}{%
+  \fbox{\parbox[c][2.2cm][c]{3.6cm}{\centering\footnotesize\color{cimatgray}%
+  Coloca aqu\'i el logo\\[2pt]\texttt{logoCimat.png}}}}}}}
+
+% CUADRO DE DEFINICIONES
+
+\usepackage[most]{tcolorbox}
+
+% Cuadro de definición numerado por sección: Definición 2.1, 2.2, ...
+\newtcbtheorem[number within=section]{definicion}{Definici\'on}{
+  enhanced,
+  colback=boxfill,          % fondo azul claro
+  colframe=cimatblue,       % borde y barra del título
+  coltitle=white,
+  fonttitle=\bfseries,
+  boxrule=0.6pt,
+  arc=2pt,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  separator sign={.},
+  description delimiters={(}{)}
+}{def}
+
+
+%  LÍNEAS DE CÓDIGO
+
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Código}
+
+\lstset{
+  language=Bash,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  frame=single, 
+  captionpos=b,
+  breaklines=true
+}
+
+\begin{document}
+
+% =================== ENCABEZADO INSTITUCIONAL ===================
+\thispagestyle{empty}
+\noindent
+\begin{minipage}[c]{0.41\textwidth}
+  \cimatlogo
+\end{minipage}%
+\hfill
+\begin{minipage}[c]{0.57\textwidth}
+  \raggedleft
+  {\large\bfseries\color{cimatblue} Centro de Investigaci\'on en Matem\'aticas, A.C.}\\[2pt]
+  {\color{cimatgray} Unidad Aguascalientes}\\[2pt]
+  {\small\color{cimatgray} Maestr\'ia en Modelaci\'on y Optimizaci\'on de Procesos}
+\end{minipage}
+
+\vspace{0.3em}
+{\color{cimatblue}\rule{\textwidth}{1.2pt}}
+
+\vspace{1.2em}
+\begin{center}
+  {\LARGE\bfseries\color{cimatblue}
+  Selecci\'on de \textit{streamlines} en tractograf\'ia mediante pesos SIFT2, LiFE y COMMIT:
+  normalizaci\'on, filtrado y evaluaci\'on contra el \textit{ground truth}
+  del fantoma ISMRM\par}
+  \vspace{1.0em}
+ \begin{tabular}{ccc}
+  {\large Sarai Hernandez } & {\large Andrea Martinez } & {\large Jaqueline Barajas }\\
+  {\large Mario Cruz}           & {\large Maximiliano Vaca }    & {\large Ricardo Carranza}\\
+  & {\large Pablo Alvarado}
+\end{tabular}\par
+  % Para agregar coautores:  {\large Sarai Hernandez Montes, Nombre Apellido, \dots\par}
+  \vspace{0.3em}
+  {\small\color{cimatgray}
+  CIMAT, Unidad Aguascalientes\\
+  Laboratorio de Resoluci\'on de Problemas~I\\
+  Noviembre de 2026\par}
+\end{center}
+
+\vspace{0.6em}
+\begin{center}
+\begin{minipage}{0.9\textwidth}
+\small
+\textbf{Resumen.}\;
+Las tractografías reconstruyen las vías de materia blanca del cerebro, sin embargo muchas de sus trayectorias corresponden a ruido y distorsionan las matrices de conectividad. Lo que se busca es encontrar es cómo seleccionar las trayectorias verdaderas sin perder los haces que realmente existen. Para ello, se analizó un tractograma de 100 000 trayectorias del fantoma ISMRM, se ponderó con SIFT2, LiFE, COMMIT y COMMIT2, y se comparó con una referencia de 189 985 trayectorias agrupadas en 21 haces. Con un criterio de distancia de Hausdorff menor que 5 mm, solo el 33.3 \% de las trayectorias resultó verdadero. A nivel de conexión, LiFE fue el único método que superó al conteo simple tanto en peso asignado a conexiones reales (90.7 \% frente a 80.5 \%) como en correlación de Pearson (0.923 frente a 0.894). Sin embargo, al evaluar cada trayectoria, SIFT2 (AUC de 0.426) y COMMIT (0.449) quedaron por debajo del azar, mientras que LiFE (0.601), COMMIT2 (0.634) y la longitud por sí sola (0.652) separaron mejor las verdaderas de las falsas. Al combinar los pesos con la longitud mediante modelos supervisados, el bosque aleatorio, el gradient boosting y el perceptrón multicapa (MLP) alcanzaron AUC de 0.799, 0.798 y 0.799, respectivamente. Al conservar 25 000 trayectorias, los tres redujeron las falsas del 66.7 \% sin filtrar a entre 37.2 \% y 37.6 \%. El bosque aleatorio recuperó 19 de los 21 haces con un Dice de al menos 0.3, y los otros dos modelos recuperaron 18, frente a 14 del filtro sin entrenamiento con menos falsas. Estos resultados muestran que combinar los pesos con la longitud mejora la selección de trayectorias en este fantoma, y que el bosque aleatorio ofrece la mayor cobertura de haces, aunque falta comprobar si los resultados se generalizan a otros datos.
+%La tractografía de difusión produce streamlines con una alta proporción de trayectorias falsas. SIFT2, LiFE y COMMIT asignan pesos por hilo a partir de la señal de difusión, lo que permite descartar los que no se sostienen en ella. Usando el fantoma del ISMRM, se generó con MRtrix3 un tractograma de 100 000 streamlines y se obtuvieron los pesos de los cuatro métodos, evaluándolos contra el ground truth (189 985 streamlines, 21 haces) mediante matrices de conectividad 84 × 84 y etiquetas por hilo basadas en la distancia de Hausdorff (< 5 mm). LiFE es el único método cuya matriz supera al conteo simple de hilos (90.7 \% del peso en conexiones reales frente a 80.5 \%). Hilo por hilo, solo el 33.3 \% corresponde al ground truth: SIFT2 y COMMIT ordenan por debajo del azar, mientras que LiFE separa mejor y la longitud del hilo por sí sola alcanza un AUC de 0.65. Para aprovechar mejor los pesos, se entrenaron modelos supervisados —bosque aleatorio (RF), gradient boosting (GB) y perceptrón multicapa (MLP)— y se compararon entre sí y con LiFE, COMMIT y SIFT2, con el fin de recuperar una alta proporción de trayectorias verdaderas y determinar el mejor modelo. Los resultados muestran que los mejores modelos son RF, GB y MLP cuando se incorpora la longitud del hilo.
+
+
+
+%Modelos supervisados con intercambio de mitades aprovechan mejor los pesos: la regresión logística alcanza AUC 0.69 (0.70 con longitud) y el bosque aleatorio y gradient boosting llegan a 0.73 sin longitud y 0.80 con ella. Con longitud y 25 000 hilos, el bosque reduce los falsos al 37 \% y recupera 19 de 21 haces.
+
+%Los algoritmos de tractograf\'ia producen conjuntos de \textit{streamlines} con una proporci\'on alta de trayectorias que no corresponden a ning\'un haz real. SIFT2, LiFE y COMMIT asignan un peso a cada \textit{streamline} a partir de la se\~nal de difusi\'on y pueden usarse para descartar los que no se sostienen con ella. Sobre el fantoma del desaf\'io ISMRM generamos, con MRtrix3, un tractograma de 100\,000 \textit{streamlines} el cual obtuvo tres vectores de pesos (m\'as COMMIT2 como variante) y los comparamos con el \textit{ground truth} (GT) de 189\,985 \textit{streamlines} y 21 haces, a nivel de matriz de conectividad $84\times 84$ e hilo por hilo. LiFE es el \'unico m\'etodo cuya matriz mejora al simple conteo de hilos (90.7\,\% del peso en conexiones reales contra 80.5\,\%). Hilo por hilo, la etiqueta es la distancia de Hausdorff al GT ($<5$~mm): el 33.3\,\% de los hilos corresponde a alg\'un hilo del GT. Describimos una poda espacial que reduce su c\'alculo de $\approx 22$~s a $\approx 0.12$~s por hilo sin cambiar el resultado. Con esa etiqueta, los pesos de SIFT2 y COMMIT ordenan por debajo del azar (AUC 0.43 y 0.45), LiFE y COMMIT2 s\'i separan hilos buenos de malos (0.60 y 0.63), y la longitud del hilo, por s\'i sola, alcanza 0.65. Promediar los tres pesos no sirve, pero modelos supervisados entrenados con intercambio de mitades s\'i los aprovechan: la regresi\'on log\'istica alcanza AUC 0.69 (0.70 con longitud), y un bosque aleatorio y \textit{gradient boosting} llegan a 0.73 sin longitud y 0.80 con ella. Con longitud, conservando 25\,000 hilos, el bosque deja 37\,\% de falsos (contra 67\,\% sin filtrar y 47\,\% del mejor filtro sin entrenar) y recupera 19 de los 21 haces, incluidos BPS, ICP y Fornix, que COMMIT2 apaga.
+
+\medskip
+\textbf{Palabras clave:} tractografía, SIFT2, LiFE, COMMIT, distancia de Hausdorff, conectividad estructural.
+\end{minipage}
+\end{center}
+
+\vspace{0.4em}
+{\color{cimatblue}\rule{\textwidth}{0.6pt}}
+
+% =================== 1. INTRODUCCIÓN =================== algoritmo p194
+\section{Introducción}
+
+La tractografía de resonancia magnética de difusión (dMRI) reconstruye vías de materia blanca del cerebro siguiendo las direcciones locales de las fibras \cite{ismrm2015data}. El resultado son curvas tridimensionales llamadas \textit{streamlines} o “hilos”. El problema recae en que una parte importante de ellos es falsa: parecen plausibles, pero no siguen ningún haz real. Esto se evidenció en el desafío ISMRM \cite{ismrm2015data}, cuyo fantoma simulado, con los haces verdaderos conocidos, es el conjunto de datos y la referencia de este trabajo \cite{daducci2015amico}.
+
+Para atacarlo, SIFT2 \cite{smith2015}, LiFE \cite{pestilli2014}, COMMIT \cite{daducci2015} y su extensión COMMIT2 \cite{schiavi2020commit2}, vuelven a los datos de difusión y asignan un peso a cada hilo según cuánto hace falta para explicar la señal medida \cite{schiavi2020}. Los tres devuelven pesos en escalas y con significados distintos, por lo que no es evidente cómo compararlos, combinarlos ni usarlos para decidir qué hilos conservar. La importancia de este trabajo es que la selección de streamlines es crítica para conectomas fiables: conservar hilos falsos distorsiona las matrices de conectividad y cualquier inferencia posterior. Aunque estos métodos son de uso común, no existe una comparación sistemática sobre un mismo tractograma y contra un ground truth completo. De aquí surge la pregunta de investigación: ¿En qué medida los pesos de SIFT2, LiFE y COMMIT, solos o combinados mediante modelos supervisados, permiten seleccionar los streamlines de un tractograma que corresponden al ground truth, tanto a nivel de conexión como de hilo?
+
+Para responderla se pesó un mismo tractograma de $100\,000$ hilos con los cuatro métodos, usando la versión revisada de 2023 del fantoma \cite{daducci2015amico}. Los métodos se compararon contra en ground truth en tres niveles: la matriz de conectividad, cada hilo por separado (con una etiqueta usando la distancia de Hausdorff) y el tractograma filtrado.
+Después se entrenaron cuatro modelos supervisados (regresión logística, bosque aleatorio, gradient boosting y MLP) que combinaran los pesos. 
+
+El objetivo es documentar un pipeline reproducible que, desde un único tractograma, obtenga los pesos de SIFT2, LiFE y COMMIT, los normalice y filtre, etiquete cada hilo contra el ground truth por distancia de Hausdorff y entrene modelos supervisados que predigan si un hilo es verdadero. Las contribuciones son el pipeline, la comparación a nivel de conexión y de hilo con métricas invariantes a la escala, la identificación del sesgo por longitud, el cálculo de Hausdorff con poda espacial y los modelos supervisados evaluados hilo por hilo y por haz.
+
+A continuación se presentan, el marco teórico con los datos, el problema directo y los modelos de clasificación; la metodología con el preprocesamiento, los pesos, la matriz de conectividad, la normalización, la etiqueta, las métricas y los modelos con validación por intercambio de mitades; los resultados en cuatro bloques (pesos y filtrado simple, nivel de conexión y nivel de hilo); y cierra con discusión, conclusiones, referencias y un apéndice con los comandos exactos del pipeline.
+
+
+
+% =================== 2. Marco Teórico ===================
+
+\section{Marco Teórico}
+
+% ===================  DATOS ===================
+\subsection{Presentación de los datos}
+
+El trabajo se basa en el fantoma síntetico del \textbf{ISMRM 2015 Tractography Challenge}~\cite{ismrm2015data} el cual se construyó en dos pasos. Primero, se trazó un tractograma de cerebro completo y un experto extrajo a mano los haces de materia blanca; esos haces quedan fijos y son el ground truth (\textit{GT}). Después, se simuló la imagen de difusión añadiendo ruido y artefactos de adquisición.
+
+Se trabaja con la \textbf{versi\'on revisada de 2023} \cite{renauld2023}, que introduce dos
+cambios. Por un lado limpia el GT: elimina los hilos con bucles, los rotos y los que se
+desv\'ian del resto de su haz. Por otro, reagrupa los haces ($21$ haces) donde tres de ellos (el corticoespinal, el fronto-pontino y el parieto-occipito-pontino) se cuentan como uno solo llamado \textit{BPS}.
+
+En la Tabla~\ref{tab:datos} se muestran los datos de entrada con los que se trabajo: 
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Archivo} & \textbf{Descripción}\\
+\midrule
+Imagen de difusión & $65$ mediciones por vóxel: uno de referencia ($b=0$) y $64$ con gradiente en direcciones distintas a el parámetro $b=3000$ s/mm$^2$.\\
+
+Parcelación & Cada vóxel lleva la etiqueta de una de 84 regiones. La región $15$ no existe en la imagen, por lo que su fila y columna quedan en cero.\\
+
+Ground truth (GT) & $189,985$ \textit{streamlines} agrupados en $21$ haces. Su matriz de conectividad tiene $529$ conexiones reales de los $3,486$ pares posibles.\\
+
+Tractograma & $100,000$ hilos, longitud media $92.13$ mm y mediana $95.21$ mm.\\
+\bottomrule
+\end{tabularx}
+\caption{Datos del fantoma. Los dos primeros archivos son los datos de entrada.}
+%\caption{Datos de entrada y tractograma de trabajo.}
+\label{tab:datos}
+\end{table}
+
+%Los 100\,000 hilos no son ``todos los posibles'': \code{tckgen -select 100000} se detiene alaceptar ese n\'umero, que es un tama\~no elegido. Que los tres m\'etodos pesen exactamente los mismos hilos es lo que permite compararlos hilo por hilo.
+
+\subsection{Métodos de filtrado de tractograma}
+
+Como el número de hilos que unen dos regiones depende de dónde se sembró, de cuántos hilos se pidieron y de la longitud y la curvatura de la trayectoria, y no solo de cuánto tejido hay, entonces se opta por utilizar métodos de filtrados para asginar a cada hilo un peso que mida cuánto hace falta ese hilo para explicar la señal que sí se midió~\cite{smith2013}. Para este trabajo se optó por trabajar con los métodos SIFT2, LIFE, COMMIT y COMMIT2.
+
+Los cuatro métodos parten del mismo planteamiento.
+
+\begin{definicion}{Problema directo de la ponderación}{directo}
+Sea $U=\{u_1,u_2,\ldots,u_n\}$ un conjunto de $n$ hilos de un tractograma y un vector de medición observado
+$\mathbf{y}\in\mathbb{R}^{m}$. A cada hilo $u_i\in U$ se le asocia una señal unitaria conocida $\mathbf{a}_i\in\mathbb{R}^{m}$. Estas señales se organizan como columnas de
+la matriz
+\[
+A=
+\begin{bmatrix}
+\mathbf{a}_1 & \mathbf{a}_2 & \cdots & \mathbf{a}_n
+\end{bmatrix}
+\in\mathbb{R}^{m\times n}.
+\]
+
+El \textit{problema directo de ponderación} consiste en encontrar un vector de pesos no negativos
+
+\[
+\mathbf{x}=
+(x_1,x_2,\ldots,x_n)^T
+\in\mathbb{R}_{\geq 0}^{n},
+\]
+
+tal que la combinación lineal de las señales unitarias aproxime el vector de medición
+observado. Matemáticamente,
+
+\begin{equation}\label{eq:directo}
+\boxed{
+\mathbf{y}\approx A\mathbf{x}
+=\sum_{i=1}^{n}x_i\mathbf{a}_i,
+\qquad \mathbf{x}\geq\mathbf{0}.
+}
+\end{equation}
+
+\begin{comment}
+    Sea $U$ un tractograma de $n$ hilos y $y$ un vector de medición. Cada hilo $i\in U$ aporta una señal unitaria conocida $a_i$ y el conjunto de esas señales forma la matriz $A=[a_1,\dots,a_n]$. Entonces, el peso $x_i$ está dado de la siguiente manera,
+\begin{equation}\label{eq:directo}
+  y \;\approx\; A x \;=\; \sum_{i=1}^{n} x_i\,a_i ,
+  \qquad x \ge 0 .
+\end{equation}
+\end{comment}
+\end{definicion}
+
+Por la Definición~\ref{def:directo}, el peso $x_i$ indica cuánto se necesita del hilo $i$ para explicar la medición, y un peso igual a cero significa que la señal no respalda ese hilo.
+
+Cada uno de los métodos maneja una perspectiva diferente de abordar el problema directo~\eqref{eq:directo}. El método \textbf{SIFT2}~\cite{smith2015} ajusta un factor multiplicativo por hilo, cuyo valor se mantiene cercano a uno, con el propósito de ajustar la densidad de fibras del tractograma para que sea consistente con la densidad estimada a partir de la FOD. 
+
+Por su parte, el método \textbf{LIFE}~\cite{pestilli2014} ajusta por mínimos cuadrados no negativos un coeficiente $\beta_i\ge 0$ por cada hilo $i$ sobre la señal, de manera que la combinación de las señales asociadas a los hilos aproxime la señal observada. 
+
+Finalmente, \textbf{COMMIT}~\cite{daducci2015} representa la señal de cada vóxel mediante tres componentes: Stick, Zeppelin y Ball (para mayor detalle de los modelos, consúltese \cite{panagiotaki2012}). Cada componente describe una contribución diferente a la señal de difusión y permite modelar distintos comportamientos de los tejidos. Por otro lado, \textbf{COMMIT2}~\cite{schiavi2020} es una generalización que añade al mismo ajuste una penalización estructurada por conexiones. La intensidad de esa penalización se define por el  parámetro $\lambda$.
+
+En la Tabla~\ref{tab:marco-metodos} se presentan las principales diferencias entre los métodos considerados.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lllc@{}}
+\toprule
+\multicolumn{1}{c}{\textbf{M\'etodo}} & \multicolumn{1}{c}{\textbf{Ajuste}} &
+\multicolumn{1}{c}{\textbf{Unidades de $x_i$}} & \textbf{Ceros}\\
+\midrule
+SIFT2  & Densidades de fibra derivadas de la FOD   & Factor multiplicativo cercano a 1   & No\\
+LiFE   & Se\~nal de difusi\'on                     & Contribuci\'on del hilo a la se\~nal & S\'i\\
+COMMIT & Se\~nal, con diccionario multicompartimento & Contribuci\'on por unidad de longitud & S\'i\\
+\bottomrule
+\end{tabular}
+\caption{Diferencias entre los m\'etodos dentro del problema directo.}
+\label{tab:marco-metodos}
+\end{table}
+
+% FALTA AGREGAR LA DISTANCIA HAUSDORFF
+
+\subsection{Modelos de clasificación supervisada}
+
+Cada hilo del tractograma se asocia con una etiqueta binaria $y_i\in\{0,1\}$, que indica si corresponde o no a alguno de los haces de referencia (Ground Truth). La etiqueta se determina mediante un criterio de comparación basado en la distancia de Hausdorff: 
+\[
+    y_i = 
+    \begin{cases}
+        1, & \text{si el hilo $i$ corresponde a algun haz del GT,} \\
+        0, & \text{en otro caso.}
+    \end{cases}
+\]
+
+A partir de esta asignación, el problema se formula como una tarea de clasificación binaria supervisada. 
+
+Para cada hilo $i$, se construye un vector de características que contienen los pesos obtenidos mediante los métodos ($x_i$), los indicadores de peso nulo correspondientes y su longitud. En particular, el vector de características se define como: 
+$$\mathbf{z}_i= \left(
+x_{i,j},v_{i,j},
+\ell_i
+\right).
+$$
+
+El objetivo consiste en estimar la probabilidad de que un hilo pertenezca al conjunto de referencia mediante una función de clasificación 
+$$f:\mathbf{z}_i\longmapsto\widehat{p}_i\in[0,1],$$ 
+donde $\widehat{p}_i$ representa la probabilidad estimada de que el hilo $i$ sea verdadero, es decir, $\widehat{p}_i=P(y_i=1\mid\mathbf{z}_i).$
+
+Una vez entrenado el modelo, los hilos se ordenan de acuerdo con sus probabilidades estimadas, de mayor a menor, y se seleccionan los $n$ hilos con los puntajes más altos.
+
+El desempeño del clasificador se evalúa mediante el área bajo la curva ROC (Area Under the Curve, AUC). Esta métrica se interpreta como la probabilidad de que un hilo perteneciente al GT, seleccionado aleatoriamente, reciba un puntaje mayor que la de un hilo que no pertenece al GT, también seleccionado aleatoriamente. De acuerdo con su valor, el AUC se interpreta de la siguiente manera:
+
+%A partir de las variables observadas de un hilo, es decir, los pesos de cada modelo \textcolor{red}{($x_S,x_C,x_L,x_{CA}$)}, los indicadores de peso nulo y su longitud $l_i$. Se busca estimar $y_i$ a través de una función $f:(x_S,x_C,x_L,x_{CA},[\,\ell\,])\mapsto[0,1]$. .
+
+%Del modelo de clasificación supervisada interesa el puntaje $Pr(y_i=1)$ para ordenar los hilos por ese puntaje y conservar los $n$ primeros. En este caso, se considero el criterio de comparación \textit{AUC} la cual es la probabilidad de que un hilo verdadero tomado al azar reciba un puntaje mayor que un hilo falso tomado al azar. Dependiendo de su valor,
+
+\[
+  \mathrm{AUC}= \;
+  \begin{cases}
+    \text{mayor a } 0.5, & \text{el puntaje separa los hilos verdaderos de los falsos;}\\[2pt]
+    \text{igual a } 0.5, & \text{el orden equivale al azar;}\\[2pt]
+    \text{menor a } 0.5, & \text{el puntaje ordena en sentido contrario.}
+  \end{cases}
+\]
+
+En este trabajo se abordo cuatro modelos de clasificación supervisada: regresión logística, bosque aleatorio (Random Forest), potenciación por gradiente (Gradient Boosting) y el perceptrón multicapa (MLP).
+
+%Para describir los modelos, se denota por $z_i$ al vector de características observadas del hilo $i$, mientras que $\sigma$ representa la función logística, definida como: 
+%En lo que sigue, $z_i$ denota el vector de variables observadas del hilo $i$ y $\sigma$ la funci\'on log\'istica definida como:
+%\[
+%  \sigma(t)=\frac{1}{1+e^{-t}},
+%\]
+%la cual es creciente y transforma cualquier número real en un valor de $(0,1)$. Por esta razón, se utiliza en los modelos que requieren expresar sus resultados como probabilidades.
+
+A continuación, se describe la formulación y el funcionamiento de cada uno de los cuatro modelos considerados. 
+
+\subsubsection{Regresión logística}
+
+El modelo de regresión logística modela la probabilidad de que el hilo $i$ sea verdadero de la siguiente manera, 
+\[
+    \widehat{p}_i=\sigma\Big(b+\sum_{m=1}^{p}\beta_m z_{im}\Big),
+  \qquad \sigma(t)=\frac{1}{1+e^{-t}}.
+\]
+donde $b$ y $\beta$ estimados por m\'axima verosimilitud. 
+
+Nótese que el signo del parámetro $\beta_m$ nos indica si más peso de ese método hace al hilo más o menos probablemente verdadero.
+
+\subsubsection{Bosque aleatorio (RF)}
+
+Sean $T_1,\dots,T_B$ \'arboles de decisi\'on
+entrenados sobre muestras \textit{bootstrap} de los hilos, con un subconjunto aleatorio de
+variables en cada divisi\'on. El bosque promedia sus predicciones mediante, 
+\[
+    \widehat{p}_i=\frac{1}{B}\sum_{b=1}^{B}T_b(z),
+\]
+donde $T_b(z)$ es la proporci\'on de hilos verdaderos en la hoja de $T_b$ que contiene a $z$.
+Al partir el espacio en regiones, capta interacciones entre variables sin declararlas~\cite{breiman2001}.
+
+\subsubsection{Gradient boosting (GB)}
+
+Sean $h_1,\dots,h_M$ árboles ajustados de forma secuencial al gradiente negativo de la entropía cruzada del modelo acumulado. Entonces
+\[
+  \widehat{p}_i=\sigma\big(F_M(\mathbf{z}_i)\big)  \hspace{0.2in} \text{con} \qquad F_M(\mathbf{z}_i)=F_0+\nu\sum_{m=1}^{M}h_m(\mathbf{z}_i),
+\]
+con $F_0$ el valor inicial y $\nu\in(0,1]$ la tasa de aprendizaje~\cite{friedman2001}.
+
+\subsubsection{Perceptrón multicapa (MLP)}
+
+Con una capa oculta y activación no lineal $\varphi$,
+\[
+    \widehat{p}_i=\sigma\big(w^{\top}\varphi(W\mathbf{z}_i+c_1)+c_2\big),
+\]
+donde $W$, $w$, $b_1$ y $b_2$ son los par\'ametros, ajustados por retropropagación. A diferencia de los árboles, exige estandarizar las variables de entrada.
+
+\section{Metodología}
+
+La resolución de este trabajo se formuló de acuerdo al flujo ilustrado en la figura~\ref{fig:flujo}, el cual encadena cuatro etapas en orden descendente: preprocesamiento y tractografía, ponderación por los cuatro métodos, etiquetado de cada hilo contra el GT y entrenamiento de los modelos. 
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  box/.style={draw=cimatblue,fill=boxfill,rounded corners=2pt,align=center,
+              minimum height=0.9cm,inner sep=4pt,text width=2.6cm},
+  data/.style={box,draw=cimatgray,fill=white},
+  arr/.style={-{Stealth[length=2mm]},thick,color=cimatgray},
+  lin/.style={thick,color=cimatgray}
+]
+% ---------- fila 1: datos, FOD, tractograma, GT ----------
+\node[data] (dwi) at (1.6,0)
+  {DWI (65 vol\'umenes)\\[1pt] {\scriptsize\ttfamily bval, bvec}};
+\node[box] (fod) at (5.6,0)
+  {Preproceso y FOD (CSD)\\[1pt]
+   {\scriptsize\ttfamily dwi2mask}\\ {\scriptsize\ttfamily dwi2response}\\
+   {\scriptsize\ttfamily dwi2fod}};
+\node[box,text width=3.2cm] (tck) at (9.6,0)
+  {Tractograma iFOD2\\ 100\,000 hilos\\[1pt]
+   {\scriptsize\ttfamily tckgen -select 100000}};
+\node[data] (gt) at (14.0,0) {GT: 189\,985 hilos\\ (21 haces)};
+
+% ---------- fila 2: los cuatro metodos ----------
+\node[box] (sift)    at (1.6,-2.5)  {SIFT2 \;$x_S$\\[1pt] {\scriptsize\ttfamily tcksift2}};
+\node[box] (life)    at (4.9,-2.5)  {LiFE \;$x_L$\\[1pt] {\scriptsize\ttfamily DIPY FiberModel}};
+\node[box] (commit)  at (8.2,-2.5)  {COMMIT \;$x_C$\\[1pt] {\scriptsize\ttfamily sh2peaks} + AMICO};
+\node[box] (commit2) at (11.5,-2.5) {COMMIT2 \;$x_{C2}$\\[1pt] grupos, $\lambda$};
+
+% ---------- fila 3: normalizacion y etiqueta ----------
+\node[box,text width=7.0cm] (norm) at (6.55,-4.7)
+  {\textbf{B.} Normalizar a $(0,1)$ y filtrar con $\eps$ (por m\'etodo)};
+\node[box] (haus) at (14.0,-4.7)
+  {\textbf{C.} Etiqueta por Hausdorff\\ (7 bloques)};
+
+% ---------- fila 4: modelo ----------
+\node[box,text width=7.5cm] (mod) at (6.55,-6.6)
+  {\textbf{D.} Modelo (log\'istica, RF, GB, MLP)\\[1pt]
+   $(x_S,x_L,x_C,x_{C2},[\ell])\to\Pr(y{=}1)$};
+
+% ---------- fila 5: evaluacion ----------
+\node[box,text width=7.5cm] (eval) at (6.55,-8.4)
+  {Evaluaci\'on contra el GT\\ (porcentaje de falsas, cobertura, Dice, MDF)};
+
+% ---------- flechas ----------
+\draw[arr] (dwi) -- (fod);
+\draw[arr] (fod) -- (tck);
+
+% tractograma -> cuatro metodos (barra colectora superior)
+\draw[lin] (tck.south) -- (9.6,-1.25);
+\draw[lin] (1.6,-1.25) -- (11.5,-1.25);
+\foreach \n/\x in {sift/1.6,life/4.9,commit/8.2,commit2/11.5}
+  \draw[arr] (\x,-1.25) -- (\n.north);
+
+% cuatro metodos -> B (barra colectora inferior)
+\foreach \n/\x in {sift/1.6,life/4.9,commit/8.2,commit2/11.5}
+  \draw[lin] (\n.south) -- (\x,-3.75);
+\draw[lin] (1.6,-3.75) -- (11.5,-3.75);
+\draw[arr] (6.55,-3.75) -- (norm.north);
+
+% GT -> etiqueta (vertical, sin cruzar nada)
+\draw[arr] (gt.south) -- (haus.north);
+
+\draw[arr] (norm.south) -- (mod.north);
+\draw[arr] (haus.south) |- (mod.east);
+\draw[arr] (mod.south)  -- (eval.north);
+
+% B -> evaluacion (por la izquierda)
+\draw[arr] (norm.west) -- (0.4,-4.7) -- (0.4,-8.4) -- (eval.west);
+\end{tikzpicture}
+\caption{Flujo de procesamiento. Las cajas blancas indican archivos y, las cajas azules los pasos de cómputo. El tractograma de $100,000$ hilos es el archivo que comparten los
+cuatro métodos de filtrado y la etiqueta.}
+\label{fig:flujo}
+\end{figure}
+
+\iffalse 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  node distance=0.55cm and 0.7cm,
+  box/.style={draw=cimatblue,fill=boxfill,rounded corners=2pt,align=center,
+              minimum height=0.85cm,inner sep=4pt,text width=2.45cm},
+  wide/.style={box,text width=5.4cm},
+  data/.style={draw=cimatgray,fill=white,rounded corners=2pt,align=center,
+               minimum height=0.85cm,inner sep=4pt,text width=2.45cm},
+  todo/.style={box,fill=white,dashed,draw=warnorange},
+  arr/.style={-{Stealth[length=2mm]},thick,color=cimatgray}
+]
+% fila 1
+\node[data] (dwi) {DWI (65 medidas)\\ \code{bval}, \code{bvec}};
+\node[box,right=of dwi] (fod) {Preproceso y FOD\\ (CSD)};
+\node[box,right=of fod] (tck) {Tractograma iFOD2\\ 100\,000 hilos};
+\node[data,right=of tck,text width=2.9cm] (gt) {GT: 189\,985 hilos\\ (21 haces)};
+% fila 2: métodos
+\node[box,below=0.9cm of tck,xshift=-2.9cm] (sift) {SIFT2\\ $x_S$};
+\node[box,right=0.35cm of sift] (life) {LiFE\\ $x_L$};
+\node[box,right=0.35cm of life] (commit) {COMMIT\\ $x_C$};
+% fila 3
+\node[wide,below=0.9cm of life] (norm) {\textbf{B.} Normalizar a $(0,1)$\\ y filtrar con $\eps$ (por m\'etodo)};
+\node[box,right=0.9cm of norm,text width=2.8cm] (haus) {\textbf{C.} Etiqueta por Hausdorff\\ (7 bloques)};
+% fila 4
+\node[box,below=0.9cm of norm,text width=5.4cm] (mod) {\textbf{D.} Modelo (log\'istica, bosque, boosting)\\ $(x_S,x_L,x_C,x_{C2}[,\ell])\to\Pr(y=1)$};
+% fila 5
+\node[wide,below=0.8cm of mod] (eval) {Evaluaci\'on contra el GT\\ (\% falsas, cobertura, Dice, MDF)};
+
+\draw[arr] (dwi) -- (fod);
+\draw[arr] (fod) -- (tck);
+\draw[arr] (tck.south) -- ++(0,-0.35) -| (sift.north);
+\draw[arr] (tck.south) -- ++(0,-0.35) -| (commit.north);
+\draw[arr] (tck.south) -- ++(0,-0.35) -| (life.north);
+\draw[arr] (sift.south) |- ($(norm.north)+(-1.6,0.35)$) -- ($(norm.north)+(-1.6,0)$);
+\draw[arr] (life.south) -- (norm.north);
+\draw[arr] (commit.south) |- ($(norm.north)+(1.6,0.35)$) -- ($(norm.north)+(1.6,0)$);
+\draw[arr] (gt.east) -| (haus.north);
+\draw[arr] (norm.south) -- (mod.north);
+\draw[arr] (haus.south) |- (mod.east);
+\draw[arr] (mod.south) -- (eval.north);
+\draw[arr] (norm.west) -- ++(-0.7,0) |- (eval.west);
+\end{tikzpicture}
+\caption{Flujo de procesamiento. Las cajas blancas indican archivos y, las cajas azules los pasos de cómputo. El tractograma es el archivo central que comparten los tres métodos y la etiqueta.}
+\label{fig:flujo}
+\end{figure}
+\fi
+
+\subsection{Matriz de conectividad}
+
+La matriz de conectividad describe cómo se conectan entre sí las $84$ regiones en que se divide el cerebro. Se construyó con la paquetería MRtrix3, pasando como entrada los pesos que el método asignó a cada hilo y pidiendo una matriz simétrica y sin autoconexiones (véase Código~\ref{lst:tck2connectome}). 
+
+\begin{lstlisting}[caption={Generación de matriz de conectividad}, label={lst:tck2connectome}]
+tck2connectome data/tracks_100k.tck data/Parcels_free.nii out/connectome_<metodo>.csv \
+  -tck_weights_in out/pesos_<metodo>.txt -symmetric -zero_diagonal
+\end{lstlisting}
+
+Cabe señalar que, de los $100,000$ hilos, $27,000$ fueron excluidos ya sea porque al menos uno de sus extremos no cae en ninguna de las $84$ regiones de la parcelación (Tabla~\ref{tab:datos}), o por conectar una región consigo misma. Esta cantidad fue la misma en todos los métodos de filtrado.
+
+\subsection{Normalización y filtrado}
+\label{sec:norm}
+
+Cada método devuelve pesos en una escala distinta. El método SIFT2 se concentran alrededor de $1$, mientras que los métodos COMMIT y LiFE operan en magnitudes del orden de $10^{-3}$ para los pesos positivos. De esta manera, los pesos crudos no son comparables entre sí ni se pueden promediar. Por tanto, se consideraron dos normalizaciones: \textit{por máximo y por percentil}. 
+
+%Sea $\omega_i$ el peso que un m\'etodo dado asigna al hilo $i$, con $i=1,\dots,n$ y $n=100\,000$.
+\begin{tcolorbox}[colback=blue!5!white, colframe=blue!75!black, title= Normalización por máximo y normalización por percentil]
+Sean $\omega_i$ el peso que un m\'etodo dado asigna al hilo $i$ y $R_i$ el rango de $\omega_i$ entre los pesos positivos, asignando el rango promedio en
+caso de empate. Para cada $i$, se define como:
+\begin{itemize}
+    \item \textit{normalización por máximo} a $\tilde{\omega}_i\in [0, 1]$ tal que
+\[
+    \tilde{\omega}_i = \frac{\omega_i}{\max\limits_k \omega_k},
+\]
+    \item \textit{normalización por percentil} a $\tilde{\omega}_i\in[0,1]$ tal que
+\[
+    \tilde{\omega}_i =
+    \begin{cases}
+        0, & \omega_i = 0,\\[4pt]
+        \dfrac{R_i}{n}, & \omega_i > 0,
+    \end{cases}
+\]
+\end{itemize}
+
+donde $k=1,\dots,100\,000$.
+\end{tcolorbox} 
+
+\begin{comment}
+\begin{tcolorbox}[colback=blue!5!white, colframe=blue!75!black, title=Normalizaci\'on por percentil]
+Sean $\omega_i$ el peso que un m\'etodo dado asigna al hilo $i$. Sea $R_i$ el rango de $\omega_i$ entre los pesos positivos, asignando el rango promedio en
+caso de empate. Para cada $i$, se define $\tilde{\omega}_i\in[0,1]$ tal que
+\[
+    \tilde{\omega}_i =
+    \begin{cases}
+        0, & \omega_i = 0,\\[4pt]
+        \dfrac{R_i}{n}, & \omega_i > 0 .
+    \end{cases}
+\]
+\end{tcolorbox}
+
+En este trabajo se opto por conservar el hilo $i$, si el peso asignado al hilo rebasaba el umbral considerado
+%$\tilde \omega_i\ge\eps$ con 
+($\eps = 0.01$). 
+\end{comment}
+
+El hilo $i$ se conserva si su peso asignado $\tilde{\omega}_i$ rebasa cierto umbral $\eps$. Se probaron $\eps=0.1$ y $\eps=0.01$; como el mismo $\eps$ conserva cantidades muy distintas de hilos en cada método, en el resto del trabajo los métodos se comparan conservando el mismo número de hilos.
+
+%\textcolor{red}{Notar que, los percentiles de varios metodos pueden promediarse antes de aplicar el umbral, ya que todos quedan en la misma escala.}
+
+\subsection{Etiqueta por hilo}
+
+Dado que se quiere conocer qué hilos conservados son los correctos, se necesita una etiqueta binaria que indique si cada hilo del tractograma corresponde o no a alguno del GT. De modo que, se mide la distancia de cada hilo a los $189,985$ del GT y se compara con un umbral. En este trabajo se utilizó la distancia de Hausdorff y la distancia mínima promedio directa o con volteo (MDF, por sus siglas en inglés).
+
+\begin{tcolorbox}[colback=blue!5!white, colframe=blue!75!black,
+title=Distancia de Hausdorff y MDF]
+Sean $y$ un hilo del tractograma, $g$ un hilo del GT y $d(p,g)$ la distancia del punto $p$
+al hilo $g$. Se define como:
+\begin{itemize}
+    \item \textit{distancia de Hausdorff} a
+\[
+    d_H(y,g)=\max\Big\{\max_{p\in y} d(p,g),\; \max_{q\in g} d(q,y)\Big\},
+\]
+    \item \textit{distancia m\'inima promedio directa o con volteo} (MDF), remuestreando
+          ambos hilos a $K=20$ puntos, a
+\[
+    d_{\mathrm{MDF}}(y,g)=\min\Big\{\tfrac1K\sum_{i=1}^{K}\lVert y_i-g_i\rVert,\;
+                       \tfrac1K\sum_{i=1}^{K}\lVert y_i-g_{K+1-i}\rVert\Big\} .
+\]
+\end{itemize}
+\end{tcolorbox}
+
+En este trabajo, el hilo $y$ se etiqueta como verdadero si su distancia al hilo más cercano del GT es menor que $5$~mm. Con la distancia de Hausdorff, el 33.3\,\% de los $100\,000$ hilos resulta verdadero; con la MDF, más tolerante porque promedia a lo largo del hilo, el 54.8\,\%. Por lo tanto, el tractograma sin filtrar contiene 66.7\,\% de hilos falsos según Hausdorff y 45.2\,\% según MDF; estas proporciones son la referencia contra la que se comparan los filtros. En adelante se usa la etiqueta de Hausdorff.
+
+\subsection{Métricas}
+
+Ahora bien, se necesita evaluar si los métodos conservan los hilos correctos, de modo que se compara lo que cada método produce con el GT. La evaluación se realizó en tres niveles: por conexión, por hilo y sobre el tractograma filtrado.
+
+%Con los pesos ya normalizados y la etiqueta de cada hilo ya calculada, resta evaluar los m\'etodos para saber cu\'ales conservan los hilos correctos. Esa evaluaci\'on compara lo que cada m\'etodo produce con el GT, y se hace en tres niveles, porque un m\'etodo puede acertar en uno y fallar en otro. El primero es la matriz de conectividad, que dice qu\'e regiones quedan unidas sin importar por qu\'e trayectoria. El segundo es el hilo individual, que pregunta si una trayectoria concreta corresponde a un haz real. El tercero es el tractograma ya filtrado, que mide si al descartar hilos se conservan los haces del GT o se pierden enteros.
+
+\subsubsection{Por conexión}
+
+Este nivel mide si el método identifica correctamente las regiones conectadas y la fuerza de cada conexión, sin importar la trayectoria. Para ello, se compara su matriz de conectividad con la del GT.  
+
+Para cada matriz evaluada, se reporta el número de conexiones con peso positivo, la cantidad de conexiones reales que sobreviven (sobre las $529$ de referencia, de $3\,486$
+pares posibles), el porcentaje del peso total asignada a conexiones reales, el $AUC$ por conexión usando el peso de cada celda, y la correlación de Pearson y Spearman con respeto al GT. 
+
+Nótese que, la matriz de conteo que asigna peso $1$ a todos los hilos actúa como control. 
+
+\subsubsection{Por hilo}
+
+Este nivel mide si el peso permite distinguir los hilos correctos de los falsos, uno por uno. Para ello, se compara el peso de cada hilo con su etiqueta. 
+
+Para cada método se reporta en dos cantidades. La primera es el AUC del peso tomado como puntaje para predecir la etiqueta, donde $0.5$ equivale a ordenar al azar. La segunda es la precisión al conservar los $n$ hilos de mayor puntaje, esto es, la fracción de verdaderos entre ellos, con $n=10,000$, $25,000$ y $50,000$ y frente a una tasa base de $33.3\%$.
+
+\subsubsection{Del tractograma filtrado}
+
+Este nivel mide si, al descartar hilos, el tractograma conserva los haces del GT o pierde alguno por completo. Para ello, cada hilo conservado se asigna al haz cuya MDF resulta menor, siempre que esa distancia sea inferior a $5$ mm; los hilos que no alcanzan ningún haz cuentan como falsos.
+
+Las métricas de vóxel se calculan contra la máscara del haz verdadero, con VP (vóxeles en ambas), FP (vóxeles que se ocupo de más) y FN (vóxeles del haz verdadero que no se cubrió). 
+
+\begin{tcolorbox}[colback=blue!5!white, colframe=blue!75!black,
+                  title=M\'etricas por haz]
+\begin{itemize}
+    \item \textit{cobertura} es la fracci\'on del haz verdadero que se alcanza a cubrir,
+\[
+    \mathrm{cobertura}=\frac{\mathrm{VP}}{\mathrm{VP}+\mathrm{FN}},
+\]
+    \item \textit{desborde} es la fracci\'on en que se excede el haz verdadero,
+\[
+    \mathrm{desborde}=\frac{\mathrm{FP}}{\mathrm{VP}+\mathrm{FN}},
+\]
+    \item \textit{Dice} al solapamiento entre ambas m\'ascaras,
+\[
+    \mathrm{Dice}=\frac{2\,\mathrm{VP}}{2\,\mathrm{VP}+\mathrm{FP}+\mathrm{FN}} .
+\]
+\end{itemize}
+Las tres toman valores en $[0,1]$, salvo el desborde, que puede superar $1$ si el haz
+reconstruido es mayor que el verdadero.
+\end{tcolorbox}
+
+% =================== 4. RESULTADOS ===================
+\section{Resultados}
+\label{sec:resultados}
+En esta sección presentamos los resultados en el orden en que se desarrolló el análisis. Primero, se examinan los pesos que asignan cada uno de los métodos de filtrado. Después, se comparan los métodos sobre la matriz de conectividad de $84 \times 84$ regiones y sobre cada hilo, el cual es el nivel en el que se define la etiqueta de verdad. 
+%faltaaaaaa
+
+%\begin{comment}
+\subsection{Nivel de conexi\'on}
+
+En el nivel de conexión, cada uno de los métodos produce una matriz de $84\times 84$ que se compara con la matriz del GT, la cual contiene $529$ conexiones reales entre $3486$ pares de regiones. La tabla \ref{tab:matrices} reporta para cada matriz el número de conexiones con valor positivo, cuántas de ellas pertenecen al GT, el porcentaje del peso total que recae sobre conexiones del GT, el AUC y la correlación de Pearson con la matriz GT. La fila conteo corresponde a la matriz de conectividad que se obtiene sin usar ningún método de filtrado y funciona como un punto de comparación, es decir, funciona como control, si una matriz ponderada coincide con el GT igual o peor que la del conteo, quiere decir que los pesos de los métodos no aportaron nada en ese sentido. 
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Xrrrrr@{}}
+\toprule
+\textbf{Matriz} & \textbf{Conexiones} & \textbf{Del GT} & \textbf{Porcentaje sobre el GT} & \textbf{AUC} & \textbf{Pearson}\\
+\midrule
+Conteo (sin pesos)         & 1\,322 & 460 & 80.5 & 0.857 & 0.894\\
+SIFT2                      & 1\,322 & 460 & 74.6 & 0.850 & 0.795\\
+COMMIT                     & 1\,203 & 446 & 63.8 & 0.829 & 0.731\\
+COMMIT $\times$ longitud   & 1\,203 & 446 & 79.0 & 0.846 & 0.881\\
+COMMIT2 ($\lambda=10^{-2}$)& 86     & 70  & 91.9 & 0.564 & 0.788\\
+\textbf{LiFE}              & \textbf{1\,168} & \textbf{442} & \textbf{90.7} & \textbf{0.851} & \textbf{0.923}\\
+\bottomrule
+\end{tabularx}
+\caption{Matrices de dimensión $84\times84$ comparadas con el GT}
+\label{tab:matrices}
+\end{table}
+
+LiFE es el \'unico método cuya matriz queda por encima del conteo en ambos criterios: concentra el $90.7\%$ del peso en conexiones del GT 
+contra $80.5\%$ y alcanza una correlación de Pearson de $0.923$, contra  $0.894$. Para ello, descarta $154$ de las $1322$ conexiones y
+pierde solo $18$ conexiones reales. Los métodos COMMIT y SIFT2 quedan por debajo del conteo, y COMMIT solo se
+acerca al multiplicar sus pesos por la longitud, con lo que la correlación de Pearson sube de $0.731$ a $0.881$.  Con $\lambda=10^{-2}$, el método 
+COMMIT2 concentra más peso en el GT, con un porcentaje de $91.9\%$ pero lo consigue dejando únicamente $86$ conexiones, de la cual $70$ son reales. 
+    
+%\end{comment}
+\subsection{Pesos, escalas y filtrado simple}
+
+Los pesos obtenidos por los distintos métodos no son comparables en valor absoluto pues, sus escalas difieren en varios órdenes de magnitud, por ejemplo, el valor máximo de SIFT2 es $3282$ y el de LiFE es aproximadamente $5.57$. Además, los métodos difieren en la proporción de hilos que descartan, por ejemplo,  COMMIT asigna peso cero a $44780$ hilos, lo que equivale a un $44 \%$ del tractograma y el método LiFE asigna ceros a $25388$ hilos, lo que equivale a un $25.4 \%$ y el método SIFT2 a ninguno. 
+
+Para llevar los pesos a una escala común, se realizó una  normalización, cada uno de los pesos se dividió entre su valor máximo y se conservaron los hilos cuyo peso normalizado es al menos $\epsilon$. Aplicando un umbral de $\epsilon=0.1$,  SIFT2 conserva $93978$ hilos ($94.0\%$) y LiFE 50\,239 ($50.2\%$). Por otro lado, considerando  $\eps=0.01$, estos porcentajes ascienden a $100\%$ y $72\%$, respectivamente. De manera particular, para SIFT2 este último umbral no descarta ningún hilo, pues sus pesos se concentran alrededor de $1$ y, tras la normalización, el menor de ellos ($0.051$) supera a $\eps$. En consecuencia, resulta preferible barrer el umbral en lugar de fijarlo, y comparar los métodos con el mismo número de hilos conservados.
+
+\begin{comment}
+\subsection{C\'alculo de la etiqueta de Hausdorff}
+\label{sec:haus}
+
+La estimaci\'on inicial era de $\approx$3 d\'ias por cada 10\,000 hilos. La fuerza bruta
+compara cada hilo ($\approx$45 puntos a 2~mm) contra los $\approx$10 millones de puntos del
+GT remuestreado, es decir $\approx$450 millones de distancias por hilo; medimos $\approx$22~s
+por hilo, lo que extrapola a $\approx$2.5 d\'ias por 10\,000 hilos y coincide con la
+estimaci\'on.
+
+La poda se basa en una desigualdad. Si $d_H(y,g)<10$~mm, \emph{cada} punto de $y$ est\'a a
+menos de 10~mm de $g$; en particular, su inicio, su punto medio y su final. Por lo tanto,
+un hilo $g$ del GT sin ning\'un punto a menos de 10~mm de alguna de esas tres posiciones no
+puede cumplir $d_H<10$ y se descarta sin calcular nada. En la pr\'actica se construye un
+\'arbol KD con los puntos del GT remuestreado cada 2~mm, se consulta qu\'e hilos del GT pasan
+cerca del inicio, del medio y del final de $y$, se intersectan las tres listas (quedan
+decenas, no 189\,985) y la distancia de Hausdorff exacta se calcula solo contra esos
+candidatos. Si no queda ninguno, o el mejor supera 10~mm, el hilo se marca como
+``a m\'as de 10~mm''.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & \textbf{Fuerza bruta} & \textbf{Con poda}\\
+\midrule
+Tiempo por hilo        & $\approx$22~s       & $\approx$0.12~s\\
+10\,000 hilos          & $\approx$2.5 d\'ias & $\approx$20~min\\
+100\,000 hilos         & $\approx$25 d\'ias  & $\approx$3.3~h en una computadora;\\
+                       &                     & $\approx$35~min por bloque con 7\\
+\bottomrule
+\end{tabular}
+\caption{Costo del c\'alculo de la etiqueta de Hausdorff.}
+\label{tab:haus}
+\end{table}
+
+\textbf{Verificaci\'on.} En 40 hilos al azar contra los 189\,985 del GT, 23 de 40 tuvieron
+correspondencia a menos de 10~mm tanto con fuerza bruta como con la poda, los mismos 40
+hilos quedaron igual clasificados, y la diferencia m\'axima entre ambos m\'etodos con el mismo
+remuestreo fue 0.0~mm: la poda no pierde ning\'un candidato. El remuestreo a 2~mm, en
+comparaci\'on con 1~mm, cambi\'o la distancia en promedio 0.032~mm y a lo m\'as 0.236~mm, muy por
+debajo de los $\eps_H$ considerados (2--10~mm). 
+
+
+\textbf{Limitaciones:} el resultado solo
+distingue ``$<10$~mm'' de ``m\'as''; la muestra de validaci\'on es de 40 hilos (la fuerza bruta
+completa es justo lo que se quiere evitar); y el error de remuestreo se midi\'o contra 1~mm,
+no contra el c\'alculo continuo.
+
+\textbf{Resultado.} El c\'alculo completo se reparti\'o en 7 bloques de $\approx$14\,286 hilos,
+uno por computadora (los resultados son independientes entre hilos, as\'i que repartir no
+cambia nada), y los siete bloques dieron proporciones casi id\'enticas (33\,$\pm$\,0.5\,\% a
+5~mm). Sobre los 100\,000 hilos, la fracci\'on con $\min_g d_H<\eps_H$ es 2.6\,\%, 13.0\,\%,
+33.3\,\%, 46.0\,\% y 58.6\,\% para $\eps_H=2$, 3, 5, 7 y 10~mm. Se fij\'o $\eps_H=5$~mm
+($\approx$2.5 v\'oxeles de 2~mm); con 3 y 7~mm el orden de los m\'etodos no cambia.
+
+
+\subsection{Nivel de hilo}
+\label{sec:res-hilo}
+En el nivel de hilo, la etiqueta de verdad principal es la de Hausdorff (Sección \ref{sec:haus})
+
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=0.42cm, width=0.82\textwidth, height=5.6cm,
+  ymin=0.25, ymax=0.85, ylabel={AUC por hilo},
+  symbolic x coords={SIFT2,COMMIT,LiFE,COMMIT2,Longitud},
+  xtick=data, nodes near coords, nodes near coords style={font=\tiny},
+  every node near coord/.append style={/pgf/number format/fixed,/pgf/number format/precision=3},
+  ymajorgrids, grid style={gray!25}, tick label style={font=\small},
+  enlarge x limits=0.15, legend style={font=\scriptsize,at={(0.02,0.98)},anchor=north west},
+  legend cell align=left
+]
+\addplot[fill=cimatblue!75,draw=cimatblue] coordinates {(SIFT2,0.426) (COMMIT,0.449) (LiFE,0.601) (COMMIT2,0.634) (Longitud,0.652)};
+\addplot[fill=cimatgray!35,draw=cimatgray] coordinates {(SIFT2,0.345) (COMMIT,0.420) (LiFE,0.655) (COMMIT2,0.684) (Longitud,0.747)};
+\legend{Hausdorff $<5$~mm (principal), MDF $<5$~mm (comparaci\'on)}
+\draw[dashed,color=warnorange,thick] (axis cs:SIFT2,0.5) -- (axis cs:Longitud,0.5);
+\end{axis}
+\end{tikzpicture}
+\caption{AUC por hilo de cada peso como puntaje para predecir la etiqueta. Con las dos
+etiquetas, COMMIT y SIFT2 quedan por debajo del azar (l\'inea punteada, 0.5) y la longitud
+del hilo, sin ning\'un m\'etodo, supera a los cuatro.}
+\label{fig:auc}
+\end{figure}
+
+Hilo por hilo el panorama cambia (Figura~\ref{fig:auc}). Con la etiqueta de Hausdorff, los
+pesos altos de SIFT2 y COMMIT caen m\'as en hilos falsos (AUC 0.426 y 0.449), mientras que
+LiFE y COMMIT2 s\'i los separan (0.601 y 0.634); la longitud sola alcanza 0.652. La
+etiqueta MDF da el mismo orden. La explicaci\'on principal es la longitud: la correlaci\'on de
+Spearman de los pesos con la longitud es $-0.41$ (SIFT2), $-0.20$ (COMMIT), $+0.27$ (LiFE) y
+$+0.27$ (COMMIT2), es decir, los dos primeros favorecen hilos cortos, que casi nunca
+corresponden al GT, y los dos \'ultimos, largos. Comparando solo hilos de longitud parecida
+(dentro de cada decil de longitud), el AUC queda en 0.508 (SIFT2), 0.485 (COMMIT), 0.529
+(LiFE) y 0.576 (COMMIT2): los pesos de SIFT2 y COMMIT no est\'an ``al rev\'es'', sino que,
+descontada la longitud, no aportan informaci\'on sobre si el hilo es verdadero.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$n$ hilos conservados & \textbf{SIFT2} & \textbf{COMMIT} & \textbf{LiFE} & \textbf{COMMIT2} & \textbf{Longitud}\\
+\midrule
+10\,000 & 13.4 & 14.7 & 42.9 & \textbf{48.7} & 31.7\\
+25\,000 & 21.5 & 25.3 & 41.1 & \textbf{52.5} & 42.2\\
+50\,000 & 28.7 & 30.9 & 40.8 & 42.3 & \textbf{42.4}\\
+\bottomrule
+\end{tabular}
+\caption{Precisi\'on (\% de verdaderos, etiqueta de Hausdorff) al conservar los $n$ hilos de
+mayor peso de cada m\'etodo. Sin filtrar: 33.3\,\%.}
+\label{tab:mismon-haus}
+\end{table}
+
+Filtrar con SIFT2 o COMMIT \emph{empeora} la proporci\'on de verdaderos respecto a no filtrar
+(Tabla~\ref{tab:mismon-haus}); con LiFE y COMMIT2 mejora hasta 1.2--1.6 veces, y COMMIT2 es el
+mejor m\'etodo individual entre 10\,000 y 25\,000 hilos.
+
+\subsection{COMMIT2 y el par\'ametro $\lambda$ (etiqueta MDF)}
+\label{sec:res-mdf-ini}
+
+El barrido de $\lambda$ se evalu\'o con la etiqueta MDF, antes de tener la de Hausdorff; sus
+cifras no se comparan con las de las secciones de modelos.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & COMMIT & $10^{-4}$ & $10^{-3}$ & $5\times10^{-3}$ & $10^{-2}$\\
+\midrule
+Peso $=0$ (\%)              & 44.8 & 50.5 & 51.0 & 58.3 & 63.1\\
+Conexiones del GT (de 529)  & 446  & 337  & 172  & 99   & 70\\
+Haces detectados (de 21)    & 21   & 21   & 21   & 20   & 17\\
+Fibras falsas (\%)          & 48.7 & 41.7 & 31.2 & 25.0 & 21.2\\
+Dice                        & 0.750& 0.740& 0.704& 0.633& 0.545\\
+\bottomrule
+\end{tabular}
+\caption{Barrido de $\lambda$ en COMMIT2 con la etiqueta MDF (referencia sin filtrar con esa
+etiqueta: 45.2\,\% de falsas, Dice 0.750, 21 haces).}
+\label{tab:lambda}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  name=a, width=0.46\textwidth, height=5.2cm, ybar, bar width=0.5cm,
+  symbolic x coords={COMMIT,{$10^{-4}$},{$10^{-3}$},{$5{\times}10^{-3}$},{$10^{-2}$}},
+  xtick=data, xticklabel style={font=\scriptsize,rotate=30,anchor=east},
+  ylabel={Fibras falsas (\%)}, ymin=0, ymax=60, ymajorgrids, grid style={gray!25},
+  title={\small Limpieza}, enlarge x limits=0.15
+]
+\addplot[fill=cimatblue!75,draw=cimatblue] coordinates {(COMMIT,48.7) ({$10^{-4}$},41.7) ({$10^{-3}$},31.2) ({$5{\times}10^{-3}$},25.0) ({$10^{-2}$},21.2)};
+\end{axis}
+\begin{axis}[
+  at={(a.east)}, anchor=west, xshift=1.3cm, width=0.46\textwidth, height=5.2cm, ybar, bar width=0.5cm,
+  symbolic x coords={COMMIT,{$10^{-4}$},{$10^{-3}$},{$5{\times}10^{-3}$},{$10^{-2}$}},
+  xtick=data, xticklabel style={font=\scriptsize,rotate=30,anchor=east},
+  ylabel={Dice}, ymin=0.4, ymax=0.8, ymajorgrids, grid style={gray!25},
+  title={\small Acuerdo con el GT}, enlarge x limits=0.15
+]
+\addplot[fill=warnorange!80,draw=warnorange] coordinates {(COMMIT,0.750) ({$10^{-4}$},0.740) ({$10^{-3}$},0.704) ({$5{\times}10^{-3}$},0.633) ({$10^{-2}$},0.545)};
+\end{axis}
+\end{tikzpicture}
+\caption{Efecto de $\lambda$ en COMMIT2: al subirlo bajan las fibras falsas, pero tambi\'en
+el Dice. Los valores $10^{-4}$ y $10^{-3}$ conservan los 21 haces (etiqueta MDF).}
+\label{fig:lambda}
+\end{figure}
+
+$\lambda$ funciona como una perilla entre limpieza y cobertura. Los valores $10^{-4}$ y
+$10^{-3}$ son los \'utiles: conservan los 21 haces, con 41.7\,\% y 31.2\,\% de falsas.
+Para $\lambda=10^{-2}$, nuestra corrida deja 36\,928 hilos con peso positivo, frente a
+62\,779 reportados por una corrida previa del equipo con el mismo $\lambda$; la diferencia
+puede venir de los pesos de grupo adaptativos, de usar 85 regiones (con el nodo 0) o de un
+tractograma distinto. Con la etiqueta de Hausdorff se evalu\'o $\lambda=10^{-2}$, que apaga
+BPS, Fornix e ICP (Secci\'on~\ref{sec:modelos-haces}).
+
+\subsection{Combinaci\'on de m\'etodos por percentiles}
+\label{sec:res-mdf-fin}
+
+Para combinar pesos de escalas distintas se usa el promedio de percentiles, véase Sección~\ref{sec:norm}. \textbf{Con la etiqueta de Hausdorff}, promediar los tres
+métodos pedidos no sirve: el promedio de SIFT2, COMMIT y LiFE tiene AUC 0.485, el de los cuatro méetodos 0.541, y solo LiFE + COMMIT2 llega a 0.649, apenas por encima de COMMIT2 solo (0.634). El voto ``válido si al menos 2 de los 3 métodos lo aceptan'' (percentil $>0.5$) conserva 33,719 hilos con 30.2\,\% de verdaderos, peor que no filtrar (33.3\,\%). El resto de la sección usa la etiqueta MDF, con la que se exploraron estas combinaciones antes de tener la métrica de Hausdorff. %no sé lo que significa
+Con solo COMMIT y SIFT2 la combinación no sirve(no es suficientemente buena): el umbral óptimo es siempre el mínimo (conservar casi todo), subir el umbral de 0.1 a 0.5 aumenta las falsas de 47.1 \% a 59.5 \% y ninguna versión supera al tractograma sin filtrar. La causa principal es la longitud: ambos favorecen hilos cortos y la etiqueta MDF marca como falsos casi todos los cortos (solo el 3.9\,\% de los hilos de menos de 56~mm resulta verdadero).
+
+La mejor combinación es \textbf{COMMIT2 + LiFE}, los dos métodos con AUC $>0.5$ hilo por hilo, con percentil global, véase la Tabla~\ref{tab:combo}. Su puntaje combinado tiene AUC 0.713, por encima de COMMIT2 (0.684) y de LiFE (0.655) por separado; es la primera combinación en lograrlo.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Xrrrrrr@{}}
+\toprule
+\textbf{Versi\'on} & \textbf{Hilos} & \textbf{Haces} & \textbf{\% falsas} & \textbf{Cobert.} & \textbf{Dice} & \textbf{MDF (mm)}\\
+\midrule
+Sin filtrar        & 100\,000 & 21 & 45.2 & 0.818 & 0.750 & 2.47\\
+COMMIT2 + LiFE     & 66\,287  & 21 & \textbf{33.8} & 0.756 & 0.736 & 2.59\\
+\bottomrule
+\end{tabularx}
+\caption{Tractograma filtrado con COMMIT2 + LiFE (percentil global, $u=0.1$) frente al
+tractograma sin filtrar, con la etiqueta MDF.}
+\label{tab:combo}
+\end{table}
+
+Con el mismo n\'umero de hilos conservados (Tabla~\ref{tab:mismon}), la combinaci\'on tiene
+menos falsas que cualquiera de los dos m\'etodos solos en $u=0.1$ y $0.2$, a cambio de algo
+menos de cobertura que COMMIT2. Desde $u=0.3$, COMMIT2 solo ya es igual o mejor.
+Normalizar por rangos de longitud ayudaba cuando se combinaban COMMIT y SIFT2 (corrige su
+sesgo hacia los cortos), pero aqu\'i empeora el resultado (AUC 0.65 contra 0.71), porque
+COMMIT2 y LiFE favorecen los hilos largos y la longitud s\'i predice la pertenencia a un
+haz.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{$u$ (hilos)} & \textbf{COMMIT2 + LiFE} & \textbf{COMMIT2 solo} & \textbf{LiFE solo}\\
+\midrule
+0.1 (66\,287) & \textbf{33.8} / 0.756 / 0.736 & 38.1 / 0.787 / 0.747 & 37.0 / 0.748 / 0.733\\
+0.2 (54\,352) & \textbf{29.9} / 0.689 / 0.702 (20) & 33.4 / 0.765 / 0.744 & 33.5 / 0.702 / 0.717\\
+0.3 (42\,402) & 26.5 / 0.591 / 0.624 (19) & \textbf{26.1} / 0.707 / 0.718 (20) & 31.1 / 0.624 / 0.672 (20)\\
+\bottomrule
+\end{tabularx}
+\caption{Mismo n\'umero de hilos conservados: \% de falsas / cobertura / Dice (entre
+par\'entesis, haces detectados si son menos de 21). Percentil global, etiqueta MDF.}
+\label{tab:mismon}
+\end{table}
+\end{comment}
+
+\subsection{Nivel de hilo}
+\label{sec:res-hilo}
+En el nivel de hilo, la etiqueta de verdad principal es la de Hausdorff, la cual nos dice que  un hilo es verdadero si su distancia de Hausdorff mínima al GT es menor que $5$ mm. Para evaluar cada peso como puntaje se utiliza el AUC. 
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=0.42cm, width=0.82\textwidth, height=5.6cm,
+  ymin=0.25, ymax=0.85, ylabel={AUC por hilo},
+  symbolic x coords={SIFT2,COMMIT,LiFE,COMMIT2,Longitud},
+  xtick=data, nodes near coords, nodes near coords style={font=\tiny},
+  every node near coord/.append style={/pgf/number format/fixed,/pgf/number format/precision=3},
+  ymajorgrids, grid style={gray!25}, tick label style={font=\small},
+  enlarge x limits=0.15, legend style={font=\scriptsize,at={(0.02,0.98)},anchor=north west},
+  legend cell align=left
+]
+\addplot[fill=cimatblue!75,draw=cimatblue] coordinates {(SIFT2,0.426) (COMMIT,0.449) (LiFE,0.601) (COMMIT2,0.634) (Longitud,0.652)};
+\legend{Hausdorff $<5$~mm}
+\draw[dashed,color=warnorange,thick] (axis cs:SIFT2,0.5) -- (axis cs:Longitud,0.5);
+\end{axis}
+\end{tikzpicture}
+\caption{AUC por hilo de cada peso como puntaje para predecir la etiqueta Hausdorff.
+COMMIT y SIFT2 quedan por debajo del azar (l\'inea punteada, 0.5), mientras que LiFE y COMMIT2
+superan el umbral y la longitud del hilo supera a los m\'etodos.}
+\label{fig:auc}
+\end{figure}
+
+Hilo por hilo el resultado es distinto al de las matrices  de pesos (Figura~\ref{fig:auc}). Con la etiqueta de Hausdorff, los
+pesos altos de SIFT2 y COMMIT se concentran en hilos falsos (AUC 0.426 y 0.449), mientras que
+LiFE Y COMMIT2 si lo separan (0.601 y 0.634). La longitud del hilo, sin ningún método, alcanza 0.652.
+
+
+La correlación de
+Spearman de los pesos con la longitud es $-0.41$ para SIFT2, $-0.20$ para COMMIT, $+0.27$ para LiFE y $+0.27$ (COMMIT2). Los métodos SIFT2 y COMMIT asignan entonces pesos mayores a los hilos cortos que no corresponden al GT, es decir, con la etiqueta de Hausdorff, ningún hilo de menor longitud es verdadero, mientras que LiFE y COMMIT2 favorecen a los hilos largos. 
+
+
+La tabla \ref{tab:mismon-haus} reporta la precisión, entendida como el porcentaje de hilos verdaderos entre los $n$ hilos de mayor peso de cada método para tres valores de $n$. Sin filtrar, la proporción de verdaderos es de $33.3\%$, de modo que una cifra menor, indica que el filtrado empeora el tractograma. 
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$n$ hilos conservados & \textbf{SIFT2} & \textbf{COMMIT} & \textbf{LiFE} & \textbf{COMMIT2} & \textbf{Longitud}\\
+\midrule
+10\,000 & 13.4 & 14.7 & 42.9 & \textbf{48.7}    & 31.7\\
+25\,000 & 21.5 & 25.3 & 41.1 & \textbf{52.5} & 42.2\\
+50\,000 & 28.7 & 30.9 & 40.8& 42.3 & \textbf{42.4}\\
+\bottomrule
+\end{tabular}
+\caption{Precisi\'on (porcentaje de hilos de verdaderos con la etiqueta de Hausdorff). }
+\label{tab:mismon-haus}
+\end{table}
+
+Filtrar con SIFT2 o COMMIT empeora la proporci\'on de verdaderos respecto a no filtrar
+(Tabla~\ref{tab:mismon-haus}); con LiFE mejora entre  $1.2$ y $1.6$ veces. 
+
+
+\subsection{Métodos supervisados a partir de la etiqueta de Hausdorff}
+\label{sec:modelos-res}
+
+Los modelos de esta subsección reciben como entrada los pesos de los cuatro métodos (en escala logarítmica) y en una de las dos variantes, la longitud del hilo y predicen la etiqueta de Hausdorff $<5$~mm. Cada modelo se entrena con la mitad \code{entrenamiento} de la tabla y se evalúa en la mitad \code{prueba}; después se intercambian los papeles, de modo que cada hilo recibe un puntaje de un modelo que no lo vio durante el entrenamiento. El AUC y su intervalo de confianza de $95\%$ (obtenido por \textit{bootstrap}) se calculan sobre la mitad de prueba y las precisiones sobre los $100,000$ hilos.
+
+El \textit{bootstrap} es un procedimiento que aproxima la variabilidad de un estadístico remuestreando los propios datos, sin necesidad de conseguir datos nuevos. De los $50\,000$ hilos de la mitad de prueba se extraen, con reemplazo, $1\,000$ muestras del mismo tamaño; en cada una algunos hilos se repiten y otros quedan fuera. En cada muestra se calcula el AUC, y el intervalo de confianza de $95\,\%$ es el rango entre los percentiles $2.5$ y $97.5$ de esos $1\,000$ valores.
+
+Todo se mide con la etiqueta de Hausdorff  $<5$~mm. ($33.3\%$ de los hilos son verdaderos; sin filtrar hay
+$66.7\%$ hilos falsos). Como referencia, el AUC por hilo de cada método solo es $0.426$ (SIFT2), $0.449$ (COMMIT), $0.601$ (LiFE), $0.634$ (COMMIT2) y $0.652$ (longitud; Secci\'on~\ref{sec:res-hilo}).
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ & & & \multicolumn{3}{c}{\textbf{\% verdaderos entre los $n$ mejores}}\\
+\cmidrule(l){4-6}
+\textbf{Modelo} & \textbf{Longitud} & \textbf{AUC (IC 95\,\%)} & $n=10\,000$ & 25\,000 & 50\,000\\
+\midrule
+COMMIT2 solo (referencia)   & --- & 0.633 (0.628--0.637) & 48.7 & 52.5 & 42.3\\
+Longitud sola (referencia)  & --- & 0.649 (0.644--0.654) & 31.7 & 42.2 & 42.4\\
+\addlinespace
+Log\'istica                      & no  & 0.688 (0.683--0.693) & 46.5 & 50.2 & 46.0\\
+
+Bosque ajustado        & no  & 0.725 (0.721--0.729) & 63.8 & 56.6 & 47.4\\
+\textit{Boosting ajustado} & no  & 0.727 (0.723--0.732) & 63.8 & 56.5 & 47.5\\
+
+Log\'istica                      & s\'i & 0.699 (0.695--0.704) & 45.0 & 48.8 & 46.7\\
+Bosque ajustado$^{*}$           & s\'i & 0.799 (0.795--0.802) & 71.4 & 62.8 & 53.0\\
+\textit{Boosting ajustado }$^{*}$ & s\'i & 0.798 (0.794--0.801) & 70.4 & 62.4 & 52.7\\
+MLP ajustado$^{*}$               & s\'i & 0.799 (0.795--0.803) & 70.8 & 62.8 & 53.0\\
+\bottomrule
+\end{tabular}
+\caption{Modelos supervisados con la etiqueta de Hausdorff $<5$~mm. Los modelos marcados con $^{*}$ son los seleccionados. El bosque, el \textit{gradient boosting} y el MLP ajustado incluyen ajuste de hiperparámetros o de entradas; el resto usa configuraciones fijas, y el SVM con n\'ucleo RBF se entren\'o con $20\,000$ hilos.}
+\label{tab:modelos}
+\end{table}
+
+Los tres modelos que se conservan en el resto del trabajo son el MLP ajustado, el bosque ajustado y el \textit{boosting ajustado}. Con longitud, sus AUC son $0.799$ y $0.798$; sin ella, $0.725$ y $0.727$. El otro modelo (la regresi\'on log\'istica) se incluye únicamente como comparación, para comprobar que los modelos seleccionados son, en efecto, los mejores. Con longitud, los intervalos de confianza de los tres seleccionados quedan por encima de los de todos los demás.  
+
+La regresión logística calcula una combinación lineal de las entradas, que en nuestro caso, las entradas son, para cada hilo:
+\begin{itemize}
+    \item el logaritmo del peso de SIFT2, el de COMMIT, el de LiFE y el de COMMIT2;
+    \item la longitud,
+\end{itemize}
+de modo que cada variable desplaza la probabilidad en un mismo sentido y con la misma intensidad, sin importar el valor de las demás. Un árbol de decisión, en cambio, divide el espacio de entradas mediante umbrales sucesivos y asigna una probabilidad propia a cada región resultante, por lo que puede expresar reglas del tipo ``si COMMIT2 es positivo y el hilo supera cierta longitud, la probabilidad de ser verdadero es alta; en otro caso, no''. El bosque ajustado y el \textit{boosting ajustado} combinan cientos de árboles de este tipo, y el MLP compone capas de combinaciones lineales con la función ReLU; los tres modelos pueden, por lo tanto, representar efectos que dependen conjuntamente de varias variables.
+
+Del método bosque ajustado, se conservan los $25 \ 000$ hilos de mayor puntaje, $62.8 \%$ son verdaderos (contra $33.3 \%$ sin filtrar y $50.2 \%$ con la logística); con los $10 \ 000$ mejores, $71.4 \%$ son verdaderos. Así, al conservar los $10\,000$ hilos de mayor puntaje, el $71.4\,\%$ es verdadero con el bosque, frente al $33.3\,\%$ sin filtrar.
+
+\subsection{Tractograma filtrado por los modelos contra el GT}
+\label{sec:modelos-haces}
+
+Un buen AUC por hilo no garantiza un buen tractograma: los filtros con menos falsos
+(mínimo de LiFE y COMMIT, COMMIT2 solo y logística) pierden haces enteros. %, porque COMMIT2 con $\lambda=10^{-2}$ asigna peso 0 al 99.7\,\% de los hilos verdaderos de BPS y a todos los de Fornix e ICP. 
+La Tabla~\ref{tab:modelos-haces} compara los tractogramas
+filtrados con el mismo n\'umero de hilos.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}Xcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{$n=10\,000$} & \multicolumn{3}{c}{$n=25\,000$}\\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+\textbf{Puntaje} & \textbf{\% falsos} & \textbf{Haces} & \textbf{Dice} & \textbf{\% falsos} & \textbf{Haces} & \textbf{Dice}\\
+\midrule
+Sin filtrar (100\,000 hilos)       & 66.7 & 20 & 0.771 & 66.7 & 20 & 0.771\\
+COMMIT                             & 85.3 & 19 & 0.515 & 74.7 & 20 & 0.703\\
+LiFE                               & 57.0 &  9 & 0.280 & 58.9 & 17 & 0.487\\
+COMMIT2                            & 51.3 & 13 & 0.353 & 47.5 & 14 & 0.502\\
+M\'inimo LiFE + COMMIT2            & 45.7 & 13 & 0.374 & 46.8 & 14 & 0.493\\
+Longitud sola                      & 68.3 &  5 & 0.152 & 57.8 &  9 & 0.317\\
+\addlinespace
+Log\'istica, 4 m\'etodos & 55.0 & 12 & 0.357 & 49.7 & 14 & 0.497\\
+Log\'istica, 4 m. + longitud & 52.6 &  7 & 0.201 & 51.8 & 13 & 0.415\\
+Bosque, sin longitud               & 36.2 & 14 & 0.443 & 43.4 & 16 & 0.556\\
+\textit{Boosting}, sin longitud    & 36.2 & 14 & 0.443 & 43.5 & 16 & 0.545\\
+Bosque, con longitud               & \textbf{28.6} & \textbf{18} & 0.530 & \textbf{37.2} & \textbf{19} & 0.651\\
+\textit{Boosting}, con longitud    & 29.6 & \textbf{18} & \textbf{0.541} & 37.6 & 18 & 0.627\\
+MLP ajustado &29.2 &17 &0.520 & 37.2&18 &0.618 \\
+\bottomrule
+\end{tabularx}
+\caption{Tractograma filtrado contra el GT con la etiqueta de Hausdorff, al mismo n\'umero de
+hilos. \emph{Haces} = haces (de 21) con Dice $\ge0.3$. El Dice (promedio sobre los 21 haces) solo cuenta los hilos verdaderos de cada haz; el costo de los falsos est\'a en la columna\% falsos.}
+\label{tab:modelos-haces}
+\end{table}
+
+Los modelos no lineales con longitud (bosque, boosting y MLP ajustado) son los primeros puntajes que logran a la vez pocos falsos y casi todos los haces. Con 25 000 hilos dejan entre 37.2 \% y 37.6 \% de falsos (contra 46.8 \% del mejor filtro anterior y 66.7 \% sin filtrar) y recuperan 18 o 19 de 21 haces (19 el bosque, 18 el boosting y el MLP), contra 14. Los haces que antes se perdían vuelven (Tabla \ref{tab:haces-perdidos}): BPS izquierdo y derecho pasan de Dice 0.03–0.08 a 0.73–0.75, ICP de 0 a 0.54–0.60, y el Fornix a 0.46 en el bosque (0.05 en el boosting y 0 en el MLP). Esa es la única diferencia en haces entre el MLP y el bosque, aunque ambos tienen el mismo AUC por hilo (0.799). Solo quedan fuera CA (33 hilos verdaderos en todo el tractograma) y CP (uno solo) y, en el MLP, también el Fornix. Sin la longitud, el bosque y el boosting recuperan BPS a medias (Dice 0.38–0.46) y no recuperan ICP ni Fornix: el rescate depende de combinar la longitud con los pesos, ya que la longitud sola recupera BPS pero pierde ICP y SCP, que son cortos ($\approx$ 60 mm).
+
+    \begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+\textbf{Haz} & \textbf{COMMIT2} & \textbf{M\'in. L+C2} & \textbf{Bosque} & \textbf{Bosque + long.} & \textbf{\textit{Boost.} + long.} & \textbf{Sin filtrar} &\textbf{MLP ajustado}\\
+\midrule
+BPS izq.  & 0.08 & 0.03 & 0.46 & \textbf{0.74} & 0.73 & 0.78&0.73\\
+BPS der.  & 0.07 & 0.04 & 0.46 & \textbf{0.75} & 0.74 & 0.80&	0.74\\
+Fornix    & 0    & 0    & 0    & \textbf{0.46} & 0.05 & 0.81&0\\
+ICP izq.  & 0    & 0    & 0.04 & 0.57 & \textbf{0.60} & 0.78&0.59\\
+ICP der.  & 0    & 0    & 0.14 & 0.54 & \textbf{0.57} & 0.78&0.55\\
+CA        & 0    & 0    & 0    & 0    & 0    & 0.73&0\\
+\bottomrule
+\end{tabular}
+\caption{Dice por haz con 25\,000 hilos en los haces que pierden los filtros basados en
+COMMIT2 (M\'in. L+C2 = m\'inimo de percentiles de LiFE y COMMIT2).}
+\label{tab:haces-perdidos}
+\end{table}
+
+\begin{comment}
+    \begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Haz} & \textbf{COMMIT2} & \textbf{M\'in. L+C2} & \textbf{Bosque} & \textbf{Bosque + long.} & \textbf{\textit{Boost.} + long.} & \textbf{Sin filtrar}\\
+\midrule
+BPS izq.  & 0.08 & 0.03 & 0.46 & \textbf{0.74} & 0.73 & 0.78\\
+BPS der.  & 0.07 & 0.04 & 0.46 & \textbf{0.75} & 0.74 & 0.80\\
+Fornix    & 0    & 0    & 0    & \textbf{0.46} & 0.05 & 0.81\\
+ICP izq.  & 0    & 0    & 0.04 & 0.57 & \textbf{0.60} & 0.78\\
+ICP der.  & 0    & 0    & 0.14 & 0.54 & \textbf{0.57} & 0.78\\
+CA        & 0    & 0    & 0    & 0    & 0    & 0.73\\
+\bottomrule
+\end{tabular}
+\caption{Dice por haz con 25\,000 hilos en los haces que pierden los filtros basados en
+COMMIT2 (M\'in. L+C2 = m\'inimo de percentiles de LiFE y COMMIT2).}
+\label{tab:haces-perdidos}
+\end{table}
+\end{comment}
+
+% =================== 5. DISCUSIÓN - max - ===================
+\section{Discusión}
+En este trabajo se partió de un único tractograma de $100\,000$ hilos y se pesó con los métodos SIFT2, LiFE, COMMIT y COMMIT2, respetando en los cuatro el mismo orden de hilos. Con esos vectores se compararon los métodos entre sí y contra el GT tanto a nivel de conexión como a nivel de hilo, se calculó la etiqueta por Hausdorff para los $100\,000$ hilos y, con ella, se entrenaron y evaluaron modelos supervisados.
+
+Al obtener la matriz de conectividad de cada método, COMMIT y SIFT2 alcanzan un AUC por conexión de $0.829$ y $0.850$ (véase Tabla~\ref{tab:matrices}) y, al mismo tiempo, ordenan por debajo del azar a los hilos individuales (Figura~\ref{fig:auc}). Ese AUC por conexión proviene sobre todo del número de hilos que llegan a cada conexión, pues la matriz de conteo, sin pesos, alcanza $0.857$; es decir, sus pesos no mejoran la matriz ni sirven para elegir hilos. LiFE es el único que funciona en los dos niveles, con la única matriz ponderada que supera al conteo y un AUC por hilo de $0.601$.
+
+La longitud del hilo se incluyó como variable adicional, en una versión aparte de cada modelo, para medir cuánto aportan los métodos además de ella. Su efecto ya se observa antes de los modelos. A nivel de conexión, la correlación de COMMIT con el GT sube de $0.731$ a $0.881$ cuando su peso se multiplica por la longitud del hilo (Tabla~\ref{tab:matrices}), ya que está definido por unidad de longitud. Hilo por hilo, la longitud sola alcanza un AUC de $0.652$ y supera a los cuatro métodos
+(Figura~\ref{fig:auc}): SIFT2 y COMMIT favorecen los hilos cortos y LiFE y COMMIT2 los largos, así que el orden de los métodos depende, en buena medida, de cómo cada uno trata la longitud.
+
+
+Los resultados anteriores nos dejan con un problema. Los filtros más limpios, basados en COMMIT2, conservan pocos hilos falsos, sin embargo pierden haces completos: con $25\,000$ hilos, el mínimo de LiFE y COMMIT2 deja $46.8\%$ de falsos, pero solo recupera 14 de los 21 haces, porque COMMIT2 asigna peso cero a casi todos los hilos verdaderos de los haces BPS, Fórnix e ICP. Por otro lado los filtros que conservan los haces, como COMMIT o no filtrar, dejan entre un $67\%$ y $75\%$ de falsos. Ningún método logra por si solo logra un tractograma limpio y completo a la vez, promediar sus pesos tampoco: el promedio de los percentiles de SIFT2, COMMIT y LiFE tiene un AUC de $0.485$, lo que es peor que el azar, ya que los errores en SIFT2 y COMMIT bajan el resultado. Es por ello que se entrenaron modelos supervisados, que aprenden con la etiqueta de Hausdorff cómo combinar los pesos en lugar de darles a todos la misma importancia. 
+
+La regresión logística mejora a cualquier método individual, pero se queda en un AUC de $0.699$ con longitud. Su límite es que solo puede sumar: cada variable (método o la longitud) empuja la probabilidad siempre en el mismo sentido y con la misma fuerza, sin importar el valor de las demás. Los modelos no lineales (bosque aleatorio, gradient boosting y MLP) llegan a $0.80$ y, entre los $10\,000$ hilos de mayor puntaje, entre el $70\%$ y el $71\%$ son verdaderos, contra el $45\%$ de la logística y el $33.3\%$ sin filtrar. La diferencia está en que pueden aprender reglas condicionales según la situación. Por ejemplo: Si COMMIT2 le da peso cero a este hilo, revisar LiFE y su longitud. De este modo se aprovechan COMMIT2 donde funciona y se recurre a lo demás donde falla.
+
+La longitud confirma esta idea. En la regresión logística, agregarla paenas sube el AUC en $0.01$ (de $0.688$ a $0.699$), mientras que en el bosque aleatorio y en el boosting lo sube cerca (de $0.07$ a $0.798$). Si la longitud ayudara igual en todos los casos sería aprovechada de la misma manera por ambos. Eso muestra que importa tanto que el hilo sea largo como que lo respalden los métodos.
+
+Esta combinación resuelve el problema inicial. Con los mismos 25 000 hilos, los tres modelos no lineales con longitud dejan alrededor de $37\%$ de falsos (frente a $47\%$ del mejor filtro sin entrenar y $67\%$ sin filtrar) y recuperan $18$ o $19$ de los $21$ haces, incluidos BPS e ICP, que con COMMIT2 eran borrados (Tablas~\ref{tab:modelos-haces} y~\ref{tab:haces-perdidos}). Como los tres empatan hilo por hilo (AUC ≈ 0.80), se recomienda el bosque aleatorio, el único que además recupera el Fórnix.
+(Tablas~\ref{tab:modelos-haces} y~\ref{tab:haces-perdidos}).
+
+
+
+
+% =================== 7. CONCLUSIONES - max -===================
+\section{Conclusiones}
+Con un tractograma compartido de 100000 hilos se obtuvieron y compararon tres vectores de pesos (y COMMIT2) contra el GT. A nivel de matriz, LiFE es el único que mejora al conteo; COMMIT mejora al multiplicarlo por la longitud. La poda espacial hace viable la etiqueta de Hausdorff (de días a $\approx$35 minutos por bloque) con resultado idéntico a la fuerza bruta en la muestra verificada. A nivel de hilo, y con las dos
+etiquetas probadas, COMMIT y SIFT2 quedan por debajo del azar (AUC 0.45 y 0.43 con Hausdorff) y COMMIT2 y LiFE sí separan (0.63 y 0.60); la longitud sola supera a todos (0.65), por lo que cualquier modelo debe considerarla explícitamente. Filtrar con un solo método o promediar percentiles no basta: lo más preciso, basado en COMMIT2, pierde haces enteros. Con la etiqueta de Hausdorff, los modelos supervisados cierran el objetivo: un promedio de los pesos no sirve, pero un modelo sí aprovecha los métodos, y los modelos de árboles con longitud (AUC 0.80) son los únicos puntajes que reducen las fibras falsas (37 \% con 25000 hilos, contra 67 \% sin filtrar) sin perder casi ningún haz (19 de 21). La longitud aporta buena parte de esa mejora, así que conviene reportar siempre también la variante sin ella (AUC 0.73, 16 haces).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ---------------- Referencias -----------------
+
+\begin{thebibliography}{99}
+\small
+
+%   -----------------------------------------------
+%    MARCO TEÓRICO
+%   -----------------------------------------------
+
+\bibitem{ismrm2015data} K.~H. Maier-Hein \textit{et al.} Tractography Challenge ISMRM 2015 Data. Zenodo, 2017.
+  \url{https://zenodo.org/records/572345}
+
+\bibitem{daducci2015amico} A. Daducci, E.~J. Canales-Rodr\'iguez, H. Zhang, T.~B. Dyrby, D.~C. Alexander, J.-P. Thiran. Accelerated Microstructure Imaging via Convex Optimization (AMICO) from diffusion MRI data. \textit{NeuroImage}, 105:32--44, 2015.
+
+\bibitem{renauld2023} E. Renauld, A. Th\'eberge, L. Petit, J.-C. Houde, M. Descoteaux.
+  Validate your white matter tractography algorithms with a reappraised ISMRM 2015
+  Tractography Challenge scoring system. \textit{Scientific Reports}, 13:2347, 2023.
+
+\bibitem{schiavi2020} S. Schiavi \textit{et al.} A new method for accurate in vivo mapping of human brain connections using microstructural and anatomical information.
+  \textit{Science Advances}, 6(31):eaba8245, 2020.
+
+
+\bibitem{smith2013} R.~E. Smith, J.-D. Tournier, F. Calamante, A. Connelly. SIFT:
+  Spherical-deconvolution informed filtering of tractograms. \textit{NeuroImage},
+  67:298--312, 2013.
+
+\bibitem{smith2015} R.~E. Smith, J.-D. Tournier, F. Calamante, A. Connelly. SIFT2: Enabling
+  dense quantitative assessment of brain white matter connectivity using streamlines
+  tractography. \textit{NeuroImage}, 119:338--351, 2015.
+
+\bibitem{pestilli2014} F. Pestilli, J.~D. Yeatman, A. Rokem, K.~N. Kay, B.~A. Wandell.
+  Evaluation and statistical inference for human connectomes. \textit{Nature Methods},
+  11:1058--1063, 2014.
+
+\bibitem{daducci2015} A. Daducci, A. Dal~Pal\`u, A. Lemkaddem, J.-P. Thiran. COMMIT: Convex
+  optimization modeling for microstructure informed tractography. \textit{IEEE Transactions
+  on Medical Imaging}, 34(1):246--257, 2015.
+
+\bibitem{schiavi2020commit2} Schiavi, S., Ocampo-Pineda, M., Barakovic, M., Petit, L., Descoteaux, M., Thiran, J.-P., \& Daducci, A. (2020). A new method for accurate in vivo mapping of human brain connections using microstructural and anatomical information. \textit{Science Advances}, 6(31), eaba8245.
+
+\bibitem{schiavi2020} S. Schiavi \textit{et al.} A new method for accurate in vivo mapping
+  of human brain connections using microstructural and anatomical information.
+  \textit{Science Advances}, 6(31):eaba8245, 2020.
+
+\bibitem{pedregosa2011} F. Pedregosa \textit{et al.} Scikit-learn: Machine learning in Python. \textit{Journal of Machine Learning Research}, 12:2825--2830, 2011.
+
+\bibitem{garyfallidis2012} E. Garyfallidis, M. Brett, M.~M. Correia, G.~B. Williams,
+  I. Nimmo-Smith. QuickBundles, a method for tractography simplification. \textit{Frontiers  in Neuroscience}, 6:175, 2012.
+
+\bibitem{breiman2001} L. Breiman. Random forests. \textit{Machine Learning}, 45(1):5--32, 2001.
+
+\bibitem{friedman2001} J.~H. Friedman. Greedy function approximation: A gradient boosting
+  machine. \textit{Annals of Statistics}, 29(5):1189--1232, 2001.
+
+\bibitem{rumelhart1986} D.~E. Rumelhart, G.~E. Hinton, R.~J. Williams. Learning
+  representations by back-propagating errors. \textit{Nature}, 323(6088):533--536, 1986.
+
+\bibitem{panagiotaki2012} Pnagiotaki, E., Schneider, T., Siow, B., Hall, M. G., Lythgoe, M. F., \& Alexander, D. C. (2012). A ranking of diffusion MRI compartment models with in vivo human brain data. \textit{Magnetic Resonance in Medicine}, 67(3), 663--677.
+
+
+%   -----------------------------------------------
+
+\end{thebibliography}
+
+\begin{comment}
+% =================== APÉNDICE ===================
+\appendix
+\section{Reproducibilidad}
+\label{app:repro}
+
+Todo el c\'odigo est\'a en el repositorio \url{https://github.com/MaximilianoVM/diffw-MRI};
+los scripts se corren desde su ra\'iz con rutas relativas (\code{data/}, \code{out/}).
+
+{\sloppy
+\textbf{Entorno.} \code{conda env create -f environment.yml} (MRtrix 3.0.8, Python 3.13,
+COMMIT 2.4.2, AMICO 2.1.1, DIPY 1.12.1, scikit-learn 1.9.1) o, en macOS, un
+\textit{venv} con \code{pip install -r requirements.txt} y MRtrix3 3.0.8 aparte. COMMIT falla con rutas
+que tengan acentos o espacios.\par}
+
+\textbf{El tractograma no se regenera.} \code{tckgen} es aleatorio: correr de nuevo la
+tractograf\'ia da otros 100\,000 hilos y ning\'un peso, etiqueta ni resultado coincidir\'ia.
+Toda reproducci\'on parte del tractograma compartido, que \code{02\_tractography.sh} solo
+genera si no existe. Los archivos se verifican por su MD5:
+\begin{itemize}
+  \item \code{tracks\_100k.tck}: \texttt{66ba3e6efe1fadf5b534d3947b2b138f}
+  \item GT \code{all\_tracks.tck}: \texttt{4cf4a8d5a268e06a7fdeb5aa388cdfdf}
+\end{itemize}
+
+\textbf{Dos niveles de reproducci\'on.}
+\begin{itemize}
+  \item \emph{Completa}, desde los datos de difusi\'on: requiere MRtrix,
+        COMMIT y DIPY y varias horas de c\'omputo (Tabla~\ref{tab:scripts}).
+  \item \emph{Desde los productos intermedios}: el repositorio
+        incluye los cuatro vectores de pesos, la distancia de Hausdorff de cada hilo
+        (\code{out/hausdorff/hausdorff.csv}) y la tabla por hilo
+        (\code{out/modelos/tabla\_hilos.csv}). Con ellos, todos los resultados por hilo y de
+        los modelos se rehacen en minutos solo con numpy, pandas y scikit-learn, sin MRtrix
+        ni COMMIT. La comparaci\'on por haces necesita adem\'as el GT y DIPY.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\code}[1]{\texttt{#1}}% sin \small dentro de la tabla
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}Xcl@{}}
+\toprule
+\textbf{Script} & \textbf{Qu\'e hace} & \textbf{Objetivo} & \textbf{Tiempo}\\
+\midrule
+\code{01\_preprocess.sh}    & gradientes con $y$ invertido, m\'ascara, respuesta y FOD & base & minutos\\
+\code{02\_tractography.sh}  & tractograma (solo si no existe), longitudes y pesos SIFT2 & A & minutos\\
+\code{03\_commit.sh}        & pesos COMMIT & A & $\approx$1~min 15~s\\
+\code{05\_life.sh}          & pesos LiFE; si existe la entrega del equipo de LiFE, no reajusta & A & ---\\
+\code{04\_matrices.sh}      & matrices $84\times84$ y su evaluaci\'on & extra & minutos\\
+\code{06\_commit2.sh}       & COMMIT2 y su matriz (\code{barrido\_lambda\_commit2.sh}: otros $\lambda$) & extra & $\approx$1~min por $\lambda$\\
+\code{07\_normalizacion.sh} & normalizaci\'on por percentil y combinaciones & B & minutos\\
+\code{08\_hausdorff.sh}     & etiqueta de Hausdorff por bloques (\code{unir} junta los bloques) & C & $\approx$35~min/bloque\\
+\code{validar\_hausdorff\_rapido.py} & poda contra fuerza bruta en 40 hilos & C & $\approx$16~min\\
+\code{09\_filtrar\_pesos.sh}& normalizar por el m\'aximo y filtrar con $\eps$ & B & segundos\\
+\code{10\_evaluar.sh}       & AUC y precisi\'on de cada m\'etodo contra Hausdorff & B & segundos\\
+\code{crear\_tabla\_modelos.py} & tabla por hilo (pesos, longitud, etiqueta, mitad) & D & segundos\\
+\code{11\_modelo.sh}        & normalizaci\'on por percentil y regresi\'on log\'istica contra Hausdorff & D & $\approx$30~s\\
+\code{modelo\_bosque\_ajustado.py} & bosque aleatorio con b\'usqueda de hiperpar\'ametros & D & 1--3~min\\
+\code{modelo\_boosting\_ajustado.py} & \textit{gradient boosting} con parada temprana & D & $\approx$1~min\\
+\code{puntajes\_candidatos.py} & puntajes por hilo de las referencias y la log\'istica & D & $\approx$1~min\\
+\code{normalizacion\_ricardo.py} & con \code{-{}-mismos-n}: tractograma filtrado contra el GT, haz por haz & D & $\approx$1~min\\
+\bottomrule
+\end{tabularx}
+\caption{Scripts del repositorio, qu\'e producen y tiempo aproximado (los tiempos dependen
+de la computadora; los de Hausdorff se midieron en una laptop).}
+\label{tab:scripts}
+\end{table}
+
+\textbf{Aleatoriedad controlada.} La partici\'on \code{entrenamiento}/\code{prueba} es 50/50,
+estratificada por la etiqueta, con semilla 0 (columna \code{conjunto} de la tabla por hilo);
+los modelos usan \code{random\_state=0}, y en la comparaci\'on a igual n\'umero de hilos los
+empates se rompen al azar con semilla 0. Con otra partici\'on las cifras cambian ligeramente.
+
+\textbf{N\'umeros de control} para verificar una reproducci\'on:
+\begin{itemize}
+  \item Tractograma: \code{tckstats} da 100\,000 hilos, media 92.13~mm y mediana 95.21~mm.
+        Si se olvida invertir $y$, se nota: hilos de $\approx$42~mm de media y solo
+        $\approx$21\,\% de conexiones reales en la matriz.
+  \item Pesos: COMMIT, 44\,780 en cero y NRMSE $0.106\pm0.039$; LiFE, 25\,388 en cero;
+        COMMIT2 ($\lambda=10^{-2}$), 36\,928 mayores que cero; SIFT2, ninguno en cero.
+        La matriz del GT tiene 529 conexiones.
+  \item Etiqueta: 33\,349 hilos con $\min_g d_H<5$~mm (33.3\,\%); 58.6\,\% a menos de 10~mm.
+  \item AUC por hilo (Hausdorff): SIFT2 0.426, COMMIT 0.449, LiFE 0.601, COMMIT2 0.634,
+        longitud 0.652; log\'istica, 0.683; bosque con longitud, 0.799.
+  \item Tractograma sin filtrar contra el GT (Hausdorff): 66.7\,\% de hilos falsos.
+\end{itemize}
+\end{comment}
+
+
+\begin{comment}
+%estas no
+% =================== REFERENCIAS ===================
+\begin{thebibliography}{99}
+\small
+\bibitem{maierhein2017} K.~H. Maier-Hein \textit{et al.} The challenge of mapping the human
+  connectome based on diffusion tractography. \textit{Nature Communications}, 8:1349, 2017.
+\bibitem{daducci2015amico} A. Daducci, E.~J. Canales-Rodr\'iguez, H. Zhang, T.~B. Dyrby,
+  D.~C. Alexander, J.-P. Thiran. Accelerated Microstructure Imaging via Convex Optimization
+  (AMICO) from diffusion MRI data. \textit{NeuroImage}, 105:32--44, 2015.
+\bibitem{schiavi2020} S. Schiavi \textit{et al.} A new method for accurate in vivo mapping
+  of human brain connections using microstructural and anatomical information.
+  \textit{Science Advances}, 6(31):eaba8245, 2020.
+
+\bibitem{tournier2007} J.-D. Tournier, F. Calamante, A. Connelly. Robust determination of the
+  fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved
+  spherical deconvolution. \textit{NeuroImage}, 35(4):1459--1472, 2007.
+\bibitem{tournier2010} J.-D. Tournier, F. Calamante, A. Connelly. Improved probabilistic
+  streamlines tractography by 2nd order integration over fibre orientation distributions.
+  \textit{Proc. ISMRM}, 18:1670, 2010.
+\bibitem{garyfallidis2014} E. Garyfallidis \textit{et al.} Dipy, a library for the analysis of
+  diffusion MRI data. \textit{Frontiers in Neuroinformatics}, 8:8, 2014.
+\bibitem{garyfallidis2012} E. Garyfallidis, M. Brett, M.~M. Correia, G.~B. Williams,
+  I. Nimmo-Smith. QuickBundles, a method for tractography simplification. \textit{Frontiers
+  in Neuroscience}, 6:175, 2012.
+\bibitem{panagiotaki2012} E. Panagiotaki \textit{et al.} Compartment models of the diffusion
+  MR signal in brain white matter: A taxonomic comparison. \textit{NeuroImage},
+  59(3):2241--2254, 2012.
+
+\bibitem{pedregosa2011} F. Pedregosa \textit{et al.} Scikit-learn: Machine learning in
+  Python. \textit{Journal of Machine Learning Research}, 12:2825--2830, 2011.
+\end{thebibliography}
+
+\end{comment}
+\end{document}

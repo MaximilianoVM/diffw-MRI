@@ -1,0 +1,109 @@
+%---------METODOLOGIA
+\subsection{Preprocesamiento y tractograf\'ia}
+
+Utilizando el paquete de \code{MRtrix3}, se estimó la máscara cerebral (\code{dwi2mask}), la respuesta de fibra única (\code{dwi2response tournier}) y la función de distribución de orientaciones de fibra (FOD) por deconvolución esférica restringida (\code{dwi2fod csd}). De modo que, el tractograma se genera con el algoritmo probabilístico iFOD2 (\code{tckgen}), sembrando dentro de la máscara y deteniéndose al aceptar $100,000$ hilos.
+
+
+%\textbf{Correcci\'on del eje $y$}. Con el archivo \code{bvec} sin modificar, lasdirecciones del gradiente resultan incoherentes con el GT; por lo que se optó por invertir el signo de lacomponente $y$ para corregirlo. El efecto sobre la tractograf\'ia es grande (longitud media de $\approx$36--42~mm a $\approx$92~mm). En cambio, los pesos de SIFT2 casi no cambian (correlaci\'on 0.989). En COMMIT y LiFE no se aisl\'o su efecto, as\'i que no puede atribuirse a esta correcci\'on una parte concreta de las mejoras observadas.
+
+\subsection{Pesos por hilo}
+
+Para los métodos de filtrado de tractograma, el método SIFT2 utilizó \code{tcksift2}, mientras que el método LIFE usó  \code{FiberModel}
+
+A continuación se describen los cuatro m\'etodos que asignan un peso a cada hilo del tractograma. Todos devuelven 100\,000 pesos no negativos en el orden de \code{tracks\_100k.tck}, pero en escalas y con significados distintos.
+
+
+\begin{itemize}
+    \item \textbf{LiFE} \cite{pestilli2014} (DIPY \cite{garyfallidis2014}, \code{FiberModel}) 
+\end{itemize}
+
+El método ajusta por m\'inimos cuadrados no negativos un coeficiente $\beta\ge 0$ por hilo sobre la se\~nal. El archivo de afinidad (\textit{affine}) debe pasarse invertido a DIPY.
+
+\begin{itemize}
+    \item \textbf{COMMIT} \cite{daducci2015} 
+\end{itemize}
+
+El método modela la se\~nal como la suma de la contribuci\'on de cada hilo (compartimento intra-axonal, \textit{Stick}), el agua alrededor de los axones (\textit{Zeppelin}) y el agua libre (\textit{Ball}) \cite{panagiotaki2012}. Con $A$ el
+diccionario de se\~nales y $y$ la se\~nal medida, resuelve
+\begin{equation}\label{eq:commit}
+  \min_{x\ge 0}\; \lVert A x - y\rVert_2^2 ,
+\end{equation}
+donde las primeras 100\,000 entradas de $x$ son los pesos de los hilos. Se us\'o el modelo
+Stick--Zeppelin--Ball con $d_\parallel=1.7\times10^{-3}$, $d_{\perp}^{\mathrm{zep}}=0.51\times10^{-3}$
+y $d_{\mathrm{iso}}\in\{1.7,3.0\}\times10^{-3}$~mm$^2$/s, hasta tres picos por v\'oxel
+(\code{sh2peaks}) y AMICO \cite{daducci2015amico} para ajustar. COMMIT no usa el GT ni
+inventa hilos: solo elige entre los que se le dan. Como su peso es por unidad de longitud,
+un hilo largo necesita menos peso para aportar la misma se\~nal, y los cortos quedan
+favorecidos.
+
+Por otro lado, \textbf{COMMIT2} \cite{schiavi2020} parte del mismo ajuste (ir a la ecuación~\eqref{eq:commit}) y le añade una penalizaci\'on por grupos. Los hilos que
+unen el mismo par de regiones forman un grupo y el ajuste prefiere apagar conexiones
+completas poco respaldadas por la se\~nal. El par\'ametro $\lambda$ controla la intensidad.
+
+\subsection{Matriz de conectividad}
+
+La matriz de conectividad describe cómo se conectan entre sí las $84$ regiones en que se divide el cerebro. De modo que, se construyó con el comando \code{tck2connectome} (\code{-symmetric
+-zero\_diagonal}), y la celda $(i,j)$ acumula lo que aporta cada hilo cuyos extremos caen
+en las regiones $i$ y $j$.
+
+Cabe señalar que, de los $10,000$ hilos, $27,000$ hilos fueron excluidos por no alcanzar dos regiones. Esta cantidad fue la misma en todos los métodos de filtrado.
+
+%Con \code{tck2connectome}, la celda $(i,j)$ suma los pesos de los hilos cuyos dos extremos caen en las regiones $i$ y $j$ (opciones \code{-symmetric -zero\_diagonal}). Con peso 1 para todos los hilos se obtiene el \textbf{conteo}, que act\'ua como control: si un m\'etodo no supera al conteo, sus pesos no aportan informaci\'on a nivel de matriz. Una variante, ``COMMIT $\times$ longitud'', multiplica cada peso por la longitud del hilo para quitar el sesgo hacia los cortos. El 27\,\% de los hilos no termina en ninguna regi\'on y queda fuera de toda matriz, igual para los tres m\'etodos.}
+
+
+% normalización
+
+\begin{itemize}
+  \item \textbf{Por el m\'aximo}: $\tilde w_i = w_i/\max_k w_k\in[0,1]$.
+        El hilo es v\'alido si $\tilde w_i\ge\eps$.
+  \item \textbf{Por percentil}: los hilos con $w=0$ se quedan en 0 y
+        los de $w>0$ reciben su rango dividido entre $n$ (rango promedio en empates).
+        Los percentiles de varios m\'etodos se promedian y se filtra con un umbral $u$.
+        Se prob\'o adem\'as una variante que calcula el percentil dentro de 10 rangos de longitud.
+\end{itemize}
+
+% ETIQUETAS POR HILOS
+
+\textbf{Hausdorff.} Para un hilo $y$ del tractograma y un hilo $g$ del GT,
+\begin{equation}
+  d_H(y,g)=\max\Big\{\max_{p\in y} d(p,g),\; \max_{q\in g} d(q,y)\Big\},
+\end{equation}
+y $y$ ``corresponde al GT'' si $\min_g d_H(y,g)<\eps_H$. \textbf{Es la etiqueta principal
+del trabajo}, con $\eps_H=5$~mm: marca como verdaderos a 33\,349 de los 100\,000 hilos. La versi\'on dirigida
+(primer t\'ermino) responde a ``\textquestiondown este hilo est\'a dentro de un haz real?''.
+Calcularla contra los 189\,985 hilos del GT es costoso (Secci\'on~\ref{sec:haus}).
+
+\textbf{MDF.} La distancia media directa con volteo (\textit{minimum average direct-flip})
+\cite{garyfallidis2012} remuestrea ambos hilos a $K=20$ puntos:
+\begin{equation}
+  \mathrm{MDF}(s,t)=\min\Big\{\tfrac1K\sum_{i=1}^{K}\lVert s_i-t_i\rVert,\;
+                       \tfrac1K\sum_{i=1}^{K}\lVert s_i-t_{K+1-i}\rVert\Big\}.
+\end{equation}
+
+Con esta etiqueta un hilo es \textit{verdadero} si su MDF m\'inima a hilos representativos de alg\'un haz del GT es menor que 5~mm. Es mucho m\'as barata ($\approx$2~min para los 100\,000 hilos) y se us\'o mientras se calculaba la de Hausdorff; marca como verdaderos al 54.8\,\% de los hilos. \textbf{Es una etiqueta secundaria}: los resultados que todav\'ia la usan (Secciones~\ref{sec:res-mdf-ini} a~\ref{sec:res-mdf-fin}) lo indican, y sus cifras no deben compararse con las de Hausdorff (por ejemplo, sin filtrar hay 45.2\,\% de hilos falsos con la MDF y 66.7\,\% con Hausdorff).
+
+
+%metricas
+
+Cabe se\~nalar que la matriz de conteo, que asigna peso $1$ a todos los hilos, act\'ua como
+control: un m\'etodo cuyos pesos no la superen no aporta informaci\'on en este nivel.
+
+\textbf{Por conexi\'on} (matriz contra el GT): n\'umero de conexiones con peso positivo;
+cu\'antas de las 529 reales sobreviven; \% del peso total que cae en conexiones reales;
+AUC por conexi\'on; y correlaci\'on de Pearson con la matriz del GT. Todas son invariantes
+a la escala de los pesos.
+
+\textbf{Por hilo:} AUC del peso como puntaje para predecir la etiqueta (0.5 = azar), y
+precisi\'on al conservar los $n$ hilos de mayor puntaje ($n=10\,000$, 25\,000, 50\,000):
+fracci\'on de verdaderos entre ellos, frente a la tasa base de 33.3\,\%. Comparar puntajes con
+el mismo $n$ es lo justo, porque un mismo $\eps$ no conserva lo mismo en cada m\'etodo.
+
+\textbf{Del tractograma filtrado} (hilo asignado al haz de menor MDF si $<5$~mm; las
+m\'etricas de v\'oxel se calculan contra la m\'ascara del haz verdadero, con VP, FP y FN):
+haces detectados (de 21); \% de fibras falsas $=$ hilos sin haz / total;
+cobertura $=\mathrm{VP}/(\mathrm{VP}+\mathrm{FN})$; desborde $=\mathrm{FP}/(\mathrm{VP}+\mathrm{FN})$;
+Dice $=2\mathrm{VP}/(2\mathrm{VP}+\mathrm{FP}+\mathrm{FN})$; y MDF sim\'etrico (mm).
+
+
+
+$5.56779200219137$
