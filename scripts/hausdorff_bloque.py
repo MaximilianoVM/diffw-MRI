@@ -30,6 +30,7 @@ import pandas as pd
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist
 
+# rutas y opciones
 os.chdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 TCK, GT, SAL = "data/tracks_100k.tck", "data/GT/all_tracks.tck", "out/hausdorff"
 opc = {a.split("=")[0]: a.split("=")[1] for a in sys.argv[1:] if a.startswith("--") and "=" in a}
@@ -37,6 +38,7 @@ pos = [a for a in sys.argv[1:] if not a.startswith("--")]
 EPS_MAX, PASO = float(opc.get("--eps-max", 10)), float(opc.get("--paso", 2))
 GT = opc.get("--gt", GT)  # en el paquete: --gt=all_tracks.tck --tck=bloque.tck --offset=<primer hilo>
 
+# unir las partes
 if "--unir" in sys.argv:
     fs = sorted(glob.glob(f"{SAL}/bloque_*.csv"))
     T = pd.concat([pd.read_csv(f) for f in fs]).sort_values("hilo").drop_duplicates("hilo")
@@ -48,6 +50,8 @@ if "--unir" in sys.argv:
         print(f"  hd_min < {e:>2} mm: {(T.hd_min < e).mean():.1%} de los hilos")
     sys.exit()
 
+# redistribuir los puntos de cada hilo para que queden cada 2 mm
+# lo prepara para KDtree
 k, N = int(pos[0]), int(pos[1])
 assert 1 <= k <= N, "el bloque k va de 1 a N"
 tam = -(-100000 // N)
@@ -55,7 +59,7 @@ ini, fin = (k - 1) * tam, min(k * tam, 100000)
 if "--n" in opc:
     fin = min(fin, ini + int(opc["--n"]))
 
-
+# lo usa la de arriba
 def remuestrea(S, paso):
     """Cada hilo -> puntos cada `paso` mm (≥ 2 puntos). Devuelve (puntos float32 concatenados, offsets)."""
     out, off = [], [0]
@@ -67,7 +71,7 @@ def remuestrea(S, paso):
         off.append(off[-1] + n)
     return np.concatenate(out), np.array(off)
 
-
+# cargar el GT y preparar el KDtree
 t0 = time.time()
 print(f"bloque {k}/{N}: hilos {ini}-{fin - 1} | eps-max {EPS_MAX} mm | paso {PASO} mm")
 G = nib.streamlines.load(GT).streamlines
@@ -77,6 +81,7 @@ gt_de_punto = np.repeat(np.arange(len(GO) - 1, dtype=np.int32), np.diff(GO))
 arbol = cKDTree(GP)
 print(f"GT: {len(GO) - 1} hilos, {len(GP)} puntos, listo en {time.time() - t0:.0f} s")
 
+# cargar el tractograma y calcular la distancia de Hausdorff de cada hilo al GT
 if "--tck" in opc:  # modo "paquete": el tractograma ya es solo el bloque; --offset = índice global de su primer hilo
     Y = nib.streamlines.load(opc["--tck"]).streamlines[:int(opc.get("--n", 10**9))]
     ini = int(opc.get("--offset", 0))
@@ -85,6 +90,8 @@ else:
     Y = nib.streamlines.load(TCK).streamlines[ini:fin]
 YP, YO = remuestrea(Y, PASO)
 filas = []
+
+# calcular la distancia de Hausdorff de cada hilo del tractograma al GT
 for i in range(fin - ini):
     y = YP[YO[i]:YO[i + 1]]
     tres = y[[0, len(y) // 2, -1]]
